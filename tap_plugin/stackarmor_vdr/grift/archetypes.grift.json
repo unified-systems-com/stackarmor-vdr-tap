@@ -1,0 +1,296 @@
+{
+  "metadata": {
+    "grift_version": "0"
+  },
+  "_reserved": {},
+  "batches": [
+    {
+      "batch_entity": {
+        "entity_id": "01a15f50-9633-7184-8e6c-29c61b23ef34",
+        "entity_type": "batch",
+        "name": "StackArmor VDR Archetypes v0.1.0",
+        "dimensions": {}
+      },
+      "batch_node": {
+        "source": "plugins.stackarmor_vdr.grift.archetypes",
+        "name": "StackArmor VDR Archetypes v0.1.0",
+        "description": "Seeds the sixteen archetype nodes of the stackArmor memo's Appendix A (source stackarmor-memo-appendix-a). A starting point the provider owns: the batch imports once, and an archetype edited afterwards is not overwritten. See specs/spec-stackarmor-vdr-v0.md (req-stackarmor-vdr-archetypes)."
+      },
+      "nodes": [
+        {
+          "entity": {
+            "entity_id": "01a15f50-9633-7184-8e6c-29b6df53ace2",
+            "entity_type": "stackarmor_vdr__archetype",
+            "name": "cicd_pipeline",
+            "dimensions": {
+              "fedramp.rule": "vdr"
+            }
+          },
+          "node": {
+            "name": "cicd_pipeline",
+            "cr": "high",
+            "ir": "high",
+            "ar": "high",
+            "description": "Build and deploy runners, artifact signing, registries. Source: stackarmor-memo-appendix-a (Appendix A of the stackArmor memo, an illustrative mapping the provider owns and may edit)."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a15f50-9633-7184-8e6c-29b7bae73173",
+            "entity_type": "stackarmor_vdr__archetype",
+            "name": "orchestrator",
+            "dimensions": {
+              "fedramp.rule": "vdr"
+            }
+          },
+          "node": {
+            "name": "orchestrator",
+            "cr": "high",
+            "ir": "high",
+            "ar": "high",
+            "description": "Control plane, etcd, scheduler, coordination. Source: stackarmor-memo-appendix-a (Appendix A of the stackArmor memo, an illustrative mapping the provider owns and may edit)."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a15f50-9633-7184-8e6c-29b826d7d45f",
+            "entity_type": "stackarmor_vdr__archetype",
+            "name": "config_actuation",
+            "dimensions": {
+              "fedramp.rule": "vdr"
+            }
+          },
+          "node": {
+            "name": "config_actuation",
+            "cr": "high",
+            "ir": "high",
+            "ar": "high",
+            "description": "IaC and GitOps, schema registry, admin and migration. Source: stackarmor-memo-appendix-a (Appendix A of the stackArmor memo, an illustrative mapping the provider owns and may edit)."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a15f50-9633-7184-8e6c-29b9a23c5175",
+            "entity_type": "stackarmor_vdr__archetype",
+            "name": "identity_secrets",
+            "dimensions": {
+              "fedramp.rule": "vdr"
+            }
+          },
+          "node": {
+            "name": "identity_secrets",
+            "cr": "high",
+            "ir": "high",
+            "ar": "high",
+            "description": "IdP and SSO, KMS, secrets managers, session stores. Source: stackarmor-memo-appendix-a (Appendix A of the stackArmor memo, an illustrative mapping the provider owns and may edit)."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a15f50-9633-7184-8e6c-29ba136ccaf1",
+            "entity_type": "stackarmor_vdr__archetype",
+            "name": "security_tooling",
+            "dimensions": {
+              "fedramp.rule": "vdr"
+            }
+          },
+          "node": {
+            "name": "security_tooling",
+            "cr": "high",
+            "ir": "high",
+            "ar": "medium",
+            "description": "Scanners, SIEM, EDR, runtime security. Source: stackarmor-memo-appendix-a (Appendix A of the stackArmor memo, an illustrative mapping the provider owns and may edit)."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a15f50-9633-7184-8e6c-29bbbec80c40",
+            "entity_type": "stackarmor_vdr__archetype",
+            "name": "change_record",
+            "dimensions": {
+              "fedramp.rule": "vdr"
+            }
+          },
+          "node": {
+            "name": "change_record",
+            "cr": "medium",
+            "ir": "medium",
+            "ar": "medium",
+            "description": "ITSM and ticketing, record only. Source: stackarmor-memo-appendix-a (Appendix A of the stackArmor memo, an illustrative mapping the provider owns and may edit)."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a15f50-9633-7184-8e6c-29bca486c1fe",
+            "entity_type": "stackarmor_vdr__archetype",
+            "name": "platform_foundation",
+            "dimensions": {
+              "fedramp.rule": "vdr"
+            }
+          },
+          "node": {
+            "name": "platform_foundation",
+            "cr": "low",
+            "ir": "high",
+            "ar": "high",
+            "description": "DNS, NTP, service discovery, internal L4 load balancers, metadata only. Source: stackarmor-memo-appendix-a (Appendix A of the stackArmor memo, an illustrative mapping the provider owns and may edit)."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a15f50-9633-7184-8e6c-29bd8b64aad5",
+            "entity_type": "stackarmor_vdr__archetype",
+            "name": "data_sensitive",
+            "dimensions": {
+              "fedramp.rule": "vdr"
+            }
+          },
+          "node": {
+            "name": "data_sensitive",
+            "cr": "high",
+            "ir": "high",
+            "ar": "high",
+            "description": "PII and CUI datastores. Source: stackarmor-memo-appendix-a (Appendix A of the stackArmor memo, an illustrative mapping the provider owns and may edit)."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a15f50-9633-7184-8e6c-29beacb7e429",
+            "entity_type": "stackarmor_vdr__archetype",
+            "name": "data_backbone",
+            "dimensions": {
+              "fedramp.rule": "vdr"
+            }
+          },
+          "node": {
+            "name": "data_backbone",
+            "cr": "high",
+            "ir": "high",
+            "ar": "high",
+            "description": "Payload queues and brokers, the system-of-record database. Source: stackarmor-memo-appendix-a (Appendix A of the stackArmor memo, an illustrative mapping the provider owns and may edit)."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a15f50-9633-7184-8e6c-29bf0007dfbe",
+            "entity_type": "stackarmor_vdr__archetype",
+            "name": "telemetry_backbone",
+            "dimensions": {
+              "fedramp.rule": "vdr"
+            }
+          },
+          "node": {
+            "name": "telemetry_backbone",
+            "cr": "medium",
+            "ir": "medium",
+            "ar": "medium",
+            "description": "Metrics and trace pipelines, event buses carrying no agency payload. Source: stackarmor-memo-appendix-a (Appendix A of the stackArmor memo, an illustrative mapping the provider owns and may edit)."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a15f50-9633-7184-8e6c-29c0ae667491",
+            "entity_type": "stackarmor_vdr__archetype",
+            "name": "app_tier",
+            "dimensions": {
+              "fedramp.rule": "vdr"
+            }
+          },
+          "node": {
+            "name": "app_tier",
+            "cr": "medium",
+            "ir": "medium",
+            "ar": "medium",
+            "description": "Stateless services, APIs, user interfaces, caches. Source: stackarmor-memo-appendix-a (Appendix A of the stackArmor memo, an illustrative mapping the provider owns and may edit)."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a15f50-9633-7184-8e6c-29c19e916c7c",
+            "entity_type": "stackarmor_vdr__archetype",
+            "name": "batch_analytics",
+            "dimensions": {
+              "fedramp.rule": "vdr"
+            }
+          },
+          "node": {
+            "name": "batch_analytics",
+            "cr": "medium",
+            "ir": "medium",
+            "ar": "low",
+            "description": "ETL, reporting, analytics jobs. Source: stackarmor-memo-appendix-a (Appendix A of the stackArmor memo, an illustrative mapping the provider owns and may edit)."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a15f50-9633-7184-8e6c-29c2161debc2",
+            "entity_type": "stackarmor_vdr__archetype",
+            "name": "public_edge",
+            "dimensions": {
+              "fedramp.rule": "vdr"
+            }
+          },
+          "node": {
+            "name": "public_edge",
+            "cr": "medium",
+            "ir": "medium",
+            "ar": "high",
+            "description": "TLS-terminating layer 7: ingress, API gateways, public web. Source: stackarmor-memo-appendix-a (Appendix A of the stackArmor memo, an illustrative mapping the provider owns and may edit)."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a15f50-9633-7184-8e6c-29c305e6ae2c",
+            "entity_type": "stackarmor_vdr__archetype",
+            "name": "passthrough_edge",
+            "dimensions": {
+              "fedramp.rule": "vdr"
+            }
+          },
+          "node": {
+            "name": "passthrough_edge",
+            "cr": "low",
+            "ir": "low",
+            "ar": "high",
+            "description": "Layer 4 and SNI passthrough load balancers, no TLS termination. Source: stackarmor-memo-appendix-a (Appendix A of the stackArmor memo, an illustrative mapping the provider owns and may edit)."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a15f50-9633-7184-8e6c-29c46327594f",
+            "entity_type": "stackarmor_vdr__archetype",
+            "name": "internal_tooling",
+            "dimensions": {
+              "fedramp.rule": "vdr"
+            }
+          },
+          "node": {
+            "name": "internal_tooling",
+            "cr": "low",
+            "ir": "low",
+            "ar": "low",
+            "description": "Dashboards, metrics and log agents. Source: stackarmor-memo-appendix-a (Appendix A of the stackArmor memo, an illustrative mapping the provider owns and may edit)."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a15f50-9633-7184-8e6c-29c5ae3cc24b",
+            "entity_type": "stackarmor_vdr__archetype",
+            "name": "dev_test",
+            "dimensions": {
+              "fedramp.rule": "vdr"
+            }
+          },
+          "node": {
+            "name": "dev_test",
+            "cr": "low",
+            "ir": "low",
+            "ar": "low",
+            "description": "Non-production. Source: stackarmor-memo-appendix-a (Appendix A of the stackArmor memo, an illustrative mapping the provider owns and may edit)."
+          }
+        }
+      ],
+      "edges": []
+    }
+  ]
+}

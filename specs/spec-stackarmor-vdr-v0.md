@@ -44,13 +44,13 @@ Three states. A value the plugin cannot know is reported as assumed, never as th
 
 | RID | Name | Status | Notes |
 | --- | --- | :---: | --- |
-| req-stackarmor-vdr-score | [The Score](#the-score) | Proposed | The pure function from impact, requirements and the affected-agency flag to U, S, the word and the N-level. |
-| req-stackarmor-vdr-impact | [Impact From The Vector](#impact-from-the-vector) | Proposed | C, I and A from a CVSS 3.0, 3.1 or 4.0 vector; a missing vector is High. |
-| req-stackarmor-vdr-exposure | [Likely Exploitable](#likely-exploitable) | Proposed | LEV from KEV and EPSS thresholds that depend on reachability. |
-| req-stackarmor-vdr-stamp | [Asset Profile Stamp](#asset-profile-stamp) | Proposed | The `asset_profile` node, a stamp holding an explicit CR, IR and AR or pointing at an archetype, with its rationale, and the `PROFILES_PROGRAM` edge to the program it describes. |
-| req-stackarmor-vdr-archetypes | [Archetype Catalog](#archetype-catalog) | Proposed | The `archetype` node, one per archetype carrying its CR, IR and AR, the sixteen memo entries seeded as data, and the `USES_ARCHETYPE` edge a stamp uses to name one. |
-| req-stackarmor-vdr-search | [The PAIN Search](#the-pain-search) | Proposed | The `stackarmor-pain` and `stackarmor-assets` `module` Search runners, which read the stamps, reduce them with the base and score. |
-| req-stackarmor-vdr-nongoals | [v0 Non-Goals](#v0-non-goals) | Proposed | What this version does not build. |
+| req-stackarmor-vdr-score | [The Score](#the-score) | Implemented | The pure function from impact, requirements and the affected-agency flag to U, S, the word and the N-level. |
+| req-stackarmor-vdr-impact | [Impact From The Vector](#impact-from-the-vector) | Implemented | C, I and A from a CVSS 3.0, 3.1 or 4.0 vector; a missing vector is High. |
+| req-stackarmor-vdr-exposure | [Likely Exploitable](#likely-exploitable) | Implemented | LEV from KEV and EPSS thresholds that depend on reachability. |
+| req-stackarmor-vdr-stamp | [Asset Profile Stamp](#asset-profile-stamp) | Implemented | The `asset_profile` node, a stamp holding an explicit CR, IR and AR or pointing at an archetype, with its rationale, and the `PROFILES_PROGRAM` edge to the program it describes. |
+| req-stackarmor-vdr-archetypes | [Archetype Catalog](#archetype-catalog) | Implemented | The `archetype` node, one per archetype carrying its CR, IR and AR, the sixteen memo entries seeded as data, and the `USES_ARCHETYPE` edge a stamp uses to name one. |
+| req-stackarmor-vdr-search | [The PAIN Search](#the-pain-search) | Implemented | The `stackarmor-pain` and `stackarmor-assets` `module` Search runners, which read the stamps, reduce them with the base and score. |
+| req-stackarmor-vdr-nongoals | [v0 Non-Goals](#v0-non-goals) | Implemented | What this version does not build. |
 | req-stackarmor-vdr-ceiling | [Intended-Use Ceiling](#v0-non-goals) | Backlog | The Security Requirements ceiling per agency scope; until it exists the result is the uncapped, conservative compatibility mode and says so. |
 | req-stackarmor-vdr-mitigation | [Mitigation Ladder](#v0-non-goals) | Backlog | Evidence-gated Modified C/I/A (High to Low, never None), the residual-response PAIN proxy and the retained consequence PAIN. |
 | req-stackarmor-vdr-agencies | [Affected Agencies](#v0-non-goals) | Backlog | The affected-agency flag per asset or finding, from governed hierarchical metadata, and the ephemeral-workload exclusion. This version takes both as Search inputs. |
@@ -61,7 +61,7 @@ Three states. A value the plugin cannot know is reported as assumed, never as th
 ----
 RID: `req-stackarmor-vdr-score`
 
-Status: `Proposed`
+Status: `Implemented`
 
 #### Implementation
 
@@ -77,17 +77,17 @@ The word is Minimal below `theta1`, Narrow from `theta1` to below `theta2`, Disr
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-stackarmor-vdr-score-1 | Pure Function | Proposed | `score.py` imports and runs with Django blocked, reads no node and gives the same output for the same input. | |
-| req-stackarmor-vdr-score-2 | The Memo's Five Examples | Proposed | The function returns N5, N4, N3, N3 and N2 for the memo's worked examples 1 to 5, with the memo's `U` and `S` to six places. | Requirements and flag: 1 is H/H/H, `m` 1 (impact H/H/H); 2 is M/M/M, `m` 1 (impact H/H/H); 3 is L/L/L, `m` 0 (impact H/H/H); 4 is M/M/H, `m` 0 (impact A only); 5 is L/M/M, `m` 0 (impact C only). |
-| req-stackarmor-vdr-score-3 | Exact Boundaries | Proposed | One High impact at a Low requirement (`U` exactly 0.28) is Narrow and one High impact at a Medium requirement (`U` exactly 0.56) is Disruptive; a test fails if the comparison is done on a rounded decimal threshold. | Example 5 sits on the first boundary. |
-| req-stackarmor-vdr-score-4 | Maximum Is D_H | Proposed | `D_H` is computed from the weights and equals 0.995904; all-High impact at all-High requirements gives `S` of exactly 1. | |
-| req-stackarmor-vdr-score-5 | N-Level From Word And Scope | Proposed | The eight word-and-flag combinations map as stated above: Minimal gives N1 and Narrow N2 for either flag; Disruptive gives N3 with `m` 0 and N4 with `m` 1; Debilitating gives N4 with `m` 0 and N5 with `m` 1. | |
+| req-stackarmor-vdr-score-1 | Pure Function | Implemented | `score.py` imports and runs with Django blocked, reads no node and gives the same output for the same input. | |
+| req-stackarmor-vdr-score-2 | The Memo's Five Examples | Implemented | The function returns N5, N4, N3, N3 and N2 for the memo's worked examples 1 to 5, with the memo's `U` and `S` to six places. | Requirements and flag: 1 is H/H/H, `m` 1 (impact H/H/H); 2 is M/M/M, `m` 1 (impact H/H/H); 3 is L/L/L, `m` 0 (impact H/H/H); 4 is M/M/H, `m` 0 (impact A only); 5 is L/M/M, `m` 0 (impact C only). |
+| req-stackarmor-vdr-score-3 | Exact Boundaries | Implemented | One High impact at a Low requirement (`U` exactly 0.28) is Narrow and one High impact at a Medium requirement (`U` exactly 0.56) is Disruptive; a test fails if the comparison is done on a rounded decimal threshold. | Example 5 sits on the first boundary. |
+| req-stackarmor-vdr-score-4 | Maximum Is D_H | Implemented | `D_H` is computed from the weights and equals 0.995904; all-High impact at all-High requirements gives `S` of exactly 1. | |
+| req-stackarmor-vdr-score-5 | N-Level From Word And Scope | Implemented | The eight word-and-flag combinations map as stated above: Minimal gives N1 and Narrow N2 for either flag; Disruptive gives N3 with `m` 0 and N4 with `m` 1; Debilitating gives N4 with `m` 0 and N5 with `m` 1. | |
 
 ### Impact From The Vector
 ----
 RID: `req-stackarmor-vdr-impact`
 
-Status: `Proposed`
+Status: `Implemented`
 
 #### Implementation
 
@@ -97,15 +97,15 @@ Status: `Proposed`
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-stackarmor-vdr-impact-1 | Version 3 Vectors | Proposed | A 3.0 or 3.1 vector gives C, I and A as None, Low or High. | |
-| req-stackarmor-vdr-impact-2 | Version 4 Vectors | Proposed | A 4.0 vector gives C, I and A from VC, VI and VA; the subsequent-system metrics are returned and not scored. | The memo's limited compatibility path. |
-| req-stackarmor-vdr-impact-3 | Missing Is High | Proposed | A missing or unparseable vector gives High on all three with `impact_source` `assumed`. | |
+| req-stackarmor-vdr-impact-1 | Version 3 Vectors | Implemented | A 3.0 or 3.1 vector gives C, I and A as None, Low or High. | |
+| req-stackarmor-vdr-impact-2 | Version 4 Vectors | Implemented | A 4.0 vector gives C, I and A from VC, VI and VA; the subsequent-system metrics are returned and not scored. | The memo's limited compatibility path. |
+| req-stackarmor-vdr-impact-3 | Missing Is High | Implemented | A missing or unparseable vector gives High on all three with `impact_source` `assumed`. | |
 
 ### Likely Exploitable
 ----
 RID: `req-stackarmor-vdr-exposure`
 
-Status: `Proposed`
+Status: `Implemented`
 
 #### Implementation
 
@@ -115,16 +115,16 @@ Likely exploitable (LEV) is, in order: the evaluation's `likely_exploitable` fac
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-stackarmor-vdr-exposure-1 | KEV Or EPSS | Proposed | KEV true, or `epss_score` at or above the threshold for the row's reachability, or both unobserved, gives LEV true; KEV false with a lower EPSS gives false. | |
-| req-stackarmor-vdr-exposure-2 | Thresholds Are Inputs | Proposed | The two EPSS thresholds are Search inputs with the defaults 0.20 and 0.55. | |
-| req-stackarmor-vdr-exposure-3 | An Evidenced Factor Overrides | Proposed | An evidence-backed `likely_exploitable` on the finding's evaluation for the Search's `evaluation_scheme` decides LEV, whether true or false; a null or unsupported factor does not, and KEV and EPSS decide. | Ruled by George, 2026-10-21. |
-| req-stackarmor-vdr-exposure-4 | Evaluation Scheme Is An Input | Proposed | The scheme whose evaluation is read is the Search input `evaluation_scheme`, default `max`. | Separate from the stamp's `scheme`. |
+| req-stackarmor-vdr-exposure-1 | KEV Or EPSS | Implemented | KEV true, or `epss_score` at or above the threshold for the row's reachability, or both unobserved, gives LEV true; KEV false with a lower EPSS gives false. | |
+| req-stackarmor-vdr-exposure-2 | Thresholds Are Inputs | Implemented | The two EPSS thresholds are Search inputs with the defaults 0.20 and 0.55. | |
+| req-stackarmor-vdr-exposure-3 | An Evidenced Factor Overrides | Implemented | An evidence-backed `likely_exploitable` on the finding's evaluation for the Search's `evaluation_scheme` decides LEV, whether true or false; a null or unsupported factor does not, and KEV and EPSS decide. | Ruled by George, 2026-10-21. |
+| req-stackarmor-vdr-exposure-4 | Evaluation Scheme Is An Input | Implemented | The scheme whose evaluation is read is the Search input `evaluation_scheme`, default `max`. | Separate from the stamp's `scheme`. |
 
 ### Asset Profile Stamp
 ----
 RID: `req-stackarmor-vdr-stamp`
 
-Status: `Proposed`
+Status: `Implemented`
 
 The method needs to know what a program requires. That is the method's own judgment, so it lives in this plugin as a **stamp**: a node of its own that points at the program, so adding the method changes no node or edge that describes the system (ruled by George, 2026-10-21). The profile is stamped on the program and nowhere else (ruled by George, 2026-10-20); a host or container's profile is computed from its programs on read.
 
@@ -148,20 +148,20 @@ Edge `PROFILES_PROGRAM__stackarmor_vdr`, `<asset_profile> PROFILES_PROGRAM <prog
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-stackarmor-vdr-stamp-1 | Keyed By Source And Stamp Key | Proposed | The node declares `NATURAL_KEY = (source, stamp_key)` and both are required; the same pair is one node. | |
-| req-stackarmor-vdr-stamp-2 | Values Are Checked | Proposed | `cr`, `ir` and `ar` outside `low`, `medium`, `high` and null are refused, and `rationale` and `scheme` are required. | |
-| req-stackarmor-vdr-stamp-3 | A Stamp Says Something | Proposed | A stamp with no `USES_ARCHETYPE` edge and none of `cr`, `ir`, `ar` is read as unclassified, High on all three objectives, with `profile_source` `unclassified`. | An edge arrives after its node, so the node cannot be refused for lacking one; the read fails safe instead. |
-| req-stackarmor-vdr-stamp-4 | An Explicit Objective Wins | Proposed | Per objective an explicit `cr`, `ir` or `ar` beats the named archetype's value for that objective, which beats High. | The memo's override rule. |
-| req-stackarmor-vdr-stamp-5 | The Edge Points At A Program Only | Proposed | `PROFILES_PROGRAM` connects an `asset_profile` to a `computing_core__program`; a host, a container or any other target is refused wherever an endpoint declares its edges. | Ruled by George, 2026-10-20. |
-| req-stackarmor-vdr-stamp-6 | Plain Reference | Proposed | The edge declares `identity: {discriminators: []}`, has no `property_schema` and is in no model's `CONTAINMENT_EDGES`. | |
-| req-stackarmor-vdr-stamp-7 | Several Stamps Never Lower | Proposed | A program with more than one stamp for the Search's scheme is scored on the per-objective maximum of them. | |
-| req-stackarmor-vdr-stamp-8 | Nothing Describing The System Changes | Proposed | The plugin adds no field, dimension or edge to a `program`, `host`, `container` or any node it does not ship. | Ruled by George, 2026-10-21. |
+| req-stackarmor-vdr-stamp-1 | Keyed By Source And Stamp Key | Implemented | The node declares `NATURAL_KEY = (source, stamp_key)` and both are required; the same pair is one node. | |
+| req-stackarmor-vdr-stamp-2 | Values Are Checked | Implemented | `cr`, `ir` and `ar` outside `low`, `medium`, `high` and null are refused, and `rationale` and `scheme` are required. | |
+| req-stackarmor-vdr-stamp-3 | A Stamp Says Something | Implemented | A stamp with no `USES_ARCHETYPE` edge and none of `cr`, `ir`, `ar` is read as unclassified, High on all three objectives, with `profile_source` `unclassified`. | An edge arrives after its node, so the node cannot be refused for lacking one; the read fails safe instead. |
+| req-stackarmor-vdr-stamp-4 | An Explicit Objective Wins | Implemented | Per objective an explicit `cr`, `ir` or `ar` beats the named archetype's value for that objective, which beats High. | The memo's override rule. |
+| req-stackarmor-vdr-stamp-5 | The Edge Points At A Program Only | Implemented | `PROFILES_PROGRAM` connects an `asset_profile` to a `computing_core__program`; a host, a container or any other target is refused wherever an endpoint declares its edges. | Ruled by George, 2026-10-20. |
+| req-stackarmor-vdr-stamp-6 | Plain Reference | Implemented | The edge declares `identity: {discriminators: []}`, has no `property_schema` and is in no model's `CONTAINMENT_EDGES`. | |
+| req-stackarmor-vdr-stamp-7 | Several Stamps Never Lower | Implemented | A program with more than one stamp for the Search's scheme is scored on the per-objective maximum of them. | |
+| req-stackarmor-vdr-stamp-8 | Nothing Describing The System Changes | Implemented | The plugin adds no field, dimension or edge to a `program`, `host`, `container` or any node it does not ship. | Ruled by George, 2026-10-21. |
 
 ### Archetype Catalog
 ----
 RID: `req-stackarmor-vdr-archetypes`
 
-Status: `Proposed`
+Status: `Implemented`
 
 An archetype is a named shorthand for a set of requirements. The memo's illustrative catalog (its Appendix A) maps each to a CR, IR and AR, and the memo says the provider owns and justifies its own mapping. So the catalog is data in the grid: one node per archetype, which a provider reads on a page and changes by editing a node, not by a release. Ruled by George, 2026-10-21: one archetype node type, with an edge from the stamp.
 
@@ -204,19 +204,19 @@ The classification rule the memo recommends is control-plane first: an asset tha
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-stackarmor-vdr-archetypes-1 | Sixteen Archetypes Seeded | Proposed | The seed holds exactly the sixteen archetypes of the table, with the table's CR, IR and AR, and a re-seed adds no duplicate. | |
-| req-stackarmor-vdr-archetypes-2 | Catalog Is Data | Proposed | The Searches read each archetype's values from `archetype` nodes through `USES_ARCHETYPE`, and no constant, input default or other copy in code holds them. | The memo requires governed configuration; a node has the grid's history. |
-| req-stackarmor-vdr-archetypes-3 | Unknown Archetype Is Unclassified | Proposed | A stamp with no readable archetype and no explicit value gives High on all three objectives with `profile_source` `unclassified`. | Fail safe. |
-| req-stackarmor-vdr-archetypes-4 | Archetype Values Are Checked | Proposed | The node declares `NATURAL_KEY = (name)`; `name`, `cr`, `ir`, `ar` and `description` are required, `cr`, `ir` and `ar` outside `low`, `medium` and `high` are refused, and a name that is not lower-case with underscores is refused. | |
-| req-stackarmor-vdr-archetypes-5 | The Edge Joins A Stamp To An Archetype | Proposed | `USES_ARCHETYPE` connects an `asset_profile` to an `archetype` only, declares `identity: {discriminators: []}`, has no `property_schema` and is in no model's `CONTAINMENT_EDGES`. | |
-| req-stackarmor-vdr-archetypes-6 | Several Archetypes Never Lower | Proposed | A stamp with more than one archetype is scored on the per-objective maximum of them. | |
-| req-stackarmor-vdr-archetypes-7 | A Seed Never Overwrites An Edit | Proposed | Re-seeding creates a missing archetype and leaves an existing archetype of the same name as the instance has it. | The provider owns the mapping; the sixteen are a starting point. |
+| req-stackarmor-vdr-archetypes-1 | Sixteen Archetypes Seeded | Implemented | The seed holds exactly the sixteen archetypes of the table, with the table's CR, IR and AR, and a re-seed adds no duplicate. | |
+| req-stackarmor-vdr-archetypes-2 | Catalog Is Data | Implemented | The Searches read each archetype's values from `archetype` nodes through `USES_ARCHETYPE`, and no constant, input default or other copy in code holds them. | The memo requires governed configuration; a node has the grid's history. |
+| req-stackarmor-vdr-archetypes-3 | Unknown Archetype Is Unclassified | Implemented | A stamp with no readable archetype and no explicit value gives High on all three objectives with `profile_source` `unclassified`. | Fail safe. |
+| req-stackarmor-vdr-archetypes-4 | Archetype Values Are Checked | Implemented | The node declares `NATURAL_KEY = (name)`; `name`, `cr`, `ir`, `ar` and `description` are required, `cr`, `ir` and `ar` outside `low`, `medium` and `high` are refused, and a name that is not lower-case with underscores is refused. | |
+| req-stackarmor-vdr-archetypes-5 | The Edge Joins A Stamp To An Archetype | Implemented | `USES_ARCHETYPE` connects an `asset_profile` to an `archetype` only, declares `identity: {discriminators: []}`, has no `property_schema` and is in no model's `CONTAINMENT_EDGES`. | |
+| req-stackarmor-vdr-archetypes-6 | Several Archetypes Never Lower | Implemented | A stamp with more than one archetype is scored on the per-objective maximum of them. | |
+| req-stackarmor-vdr-archetypes-7 | A Seed Never Overwrites An Edit | Implemented | Re-seeding creates a missing archetype and leaves an existing archetype of the same name as the instance has it. | The provider owns the mapping; the sixteen are a starting point. |
 
 ### The PAIN Search
 ----
 RID: `req-stackarmor-vdr-search`
 
-Status: `Proposed`
+Status: `Implemented`
 
 #### Implementation
 
@@ -238,22 +238,22 @@ Two `module` Search runners in `tap_plugin/stackarmor_vdr/searches/`, under the 
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-stackarmor-vdr-search-1 | One Row Per Finding And Owner | Proposed | The Search returns the base's reach rows, one per open finding and owner, each with a score. | Ruled by George, 2026-10-20. |
-| req-stackarmor-vdr-search-2 | Derivation In The Row | Proposed | Every row carries every input and intermediate listed under "The row", so a reviewer can redo it by hand. | |
-| req-stackarmor-vdr-search-3 | Parameters Are Search Defaults | Proposed | The weights, thresholds, EPSS thresholds and scheme are declared in the runner's input schema with defaults, and no constant in code duplicates one. The catalog is the archetype nodes (`req-stackarmor-vdr-archetypes-2`). | |
-| req-stackarmor-vdr-search-4 | Agencies Assumed Visibly | Proposed | `m` is the input `multi_agency`, default 1, and every row carries `multi_agency_source`. | The worst case. |
-| req-stackarmor-vdr-search-5 | Nothing Is Stored | Proposed | Neither runner writes a node or an edge, and the evaluation's `pain` stays refused. The stamp node is the instance's data, written by whoever stamps. | |
-| req-stackarmor-vdr-search-6 | Unclassified Is Not Evidence | Proposed | A Search's description says that a row with `profile_source` `unclassified` or `container`, or with `multi_agency_source` assumed, is the conservative compatibility result and not an evidenced, agency-specific derivation. | The memo forbids describing it as evidenced. |
-| req-stackarmor-vdr-search-7 | Runner Keys | Proposed | The runners are registered as `tap_plugin.stackarmor_vdr.searches.pain:stackarmor-pain` and `tap_plugin.stackarmor_vdr.searches.pain:stackarmor-assets`, the keys the instance's Searches name. | |
-| req-stackarmor-vdr-search-8 | Dependency Floor | Proposed | `depends_on` and the dependency floor name `fedramp_20x_vdr` at v0.1.2 (the release that ships `reach_rows`, `reduce_profiles`, `exposure_column`, `backed_factors` and `deadline_hours`), `computing_core` at v0.10.2 and `compliance_core` at v0.8.7. | Released pins as of 2026-10-21. |
-| req-stackarmor-vdr-search-9 | Stamps Are Read Through The Edge | Proposed | The Search reads a program's profile only from `asset_profile` nodes reached by `PROFILES_PROGRAM` with the Search's `scheme`, and their archetypes only through `USES_ARCHETYPE`, and from no dimension key. | |
-| req-stackarmor-vdr-search-10 | Rows Carry Their Scheme | Proposed | Every row of both Searches carries `scheme`, the Search input. | So the result can be compared with another scheme's. |
+| req-stackarmor-vdr-search-1 | One Row Per Finding And Owner | Implemented | The Search returns the base's reach rows, one per open finding and owner, each with a score. | Ruled by George, 2026-10-20. |
+| req-stackarmor-vdr-search-2 | Derivation In The Row | Implemented | Every row carries every input and intermediate listed under "The row", so a reviewer can redo it by hand. | |
+| req-stackarmor-vdr-search-3 | Parameters Are Search Defaults | Implemented | The weights, thresholds, EPSS thresholds and scheme are declared in the runner's input schema with defaults, and no constant in code duplicates one. The catalog is the archetype nodes (`req-stackarmor-vdr-archetypes-2`). | |
+| req-stackarmor-vdr-search-4 | Agencies Assumed Visibly | Implemented | `m` is the input `multi_agency`, default 1, and every row carries `multi_agency_source`. | The worst case. |
+| req-stackarmor-vdr-search-5 | Nothing Is Stored | Implemented | Neither runner writes a node or an edge, and the evaluation's `pain` stays refused. The stamp node is the instance's data, written by whoever stamps. | |
+| req-stackarmor-vdr-search-6 | Unclassified Is Not Evidence | Implemented | A Search's description says that a row with `profile_source` `unclassified` or `container`, or with `multi_agency_source` assumed, is the conservative compatibility result and not an evidenced, agency-specific derivation. | The memo forbids describing it as evidenced. |
+| req-stackarmor-vdr-search-7 | Runner Keys | Implemented | The runners are registered as `tap_plugin.stackarmor_vdr.searches.pain:stackarmor-pain` and `tap_plugin.stackarmor_vdr.searches.pain:stackarmor-assets`, the keys the instance's Searches name. | |
+| req-stackarmor-vdr-search-8 | Dependency Floor | Implemented | `depends_on` and the dependency floor name `fedramp_20x_vdr` at v0.1.2 (the release that ships `reach_rows`, `reduce_profiles`, `exposure_column`, `backed_factors` and `deadline_hours`), `computing_core` at v0.10.2 and `compliance_core` at v0.8.7. | Released pins as of 2026-10-21. |
+| req-stackarmor-vdr-search-9 | Stamps Are Read Through The Edge | Implemented | The Search reads a program's profile only from `asset_profile` nodes reached by `PROFILES_PROGRAM` with the Search's `scheme`, and their archetypes only through `USES_ARCHETYPE`, and from no dimension key. | |
+| req-stackarmor-vdr-search-10 | Rows Carry Their Scheme | Implemented | Every row of both Searches carries `scheme`, the Search input. | So the result can be compared with another scheme's. |
 
 ### v0 Non-Goals
 ----
 RID: `req-stackarmor-vdr-nongoals`
 
-Status: `Proposed`
+Status: `Implemented`
 
 This version does not:
 

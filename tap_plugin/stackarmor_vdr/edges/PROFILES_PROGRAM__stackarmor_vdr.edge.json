@@ -1,0 +1,17 @@
+{
+  "slug": "PROFILES_PROGRAM__stackarmor_vdr",
+  "name": "Profiles Program",
+  "description": "A stackArmor asset profile describes one program: the stamp points at the thing it describes. The program belongs to computing_core, which this plugin depends on; the target is a program only because the profile is stamped on the program and nowhere else.",
+  "sources": [
+    "stackarmor_vdr__asset_profile"
+  ],
+  "targets": [
+    "computing_core__program"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "fedramp.rule": "vdr"
+  }
+}
