@@ -1,0 +1,17 @@
+{
+  "slug": "USES_ARCHETYPE__stackarmor_vdr",
+  "name": "Uses Archetype",
+  "description": "An asset profile takes the requirements of a named archetype. A profile may name several; the Searches take the per-objective maximum, so a second never lowers the result.",
+  "sources": [
+    "stackarmor_vdr__asset_profile"
+  ],
+  "targets": [
+    "stackarmor_vdr__archetype"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "fedramp.rule": "vdr"
+  }
+}

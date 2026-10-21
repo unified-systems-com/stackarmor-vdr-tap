@@ -1,0 +1,39 @@
+manifest_version = "0"
+plugin_version = "0.0.0" # x-release-please-version
+requires_tap = ">=0.3.0"
+slug = "stackarmor_vdr"
+name = "StackArmor VDR"
+description = "The stackArmor deterministic, CVSS-environmental PAIN method for FedRAMP VDR: a finding's N-level and deadline from its CVSS impact, its asset's requirements and its exposure."
+
+depends_on = [
+    { slug = "fedramp_20x_vdr", note = "import dependency: the Searches import reach_rows, reduce_profiles, exposure_column, backed_factors and deadline_hours, and read VdrEvaluation and VdrTimeframe rows through them. First shipped together in v0.1.2." },
+    { slug = "computing_core", note = "vocabulary dependency: PROFILES_PROGRAM targets computing_core__program and stackarmor-assets follows RUNS_PROGRAM. v0.10.2 is the floor of the base's reach." },
+    { slug = "compliance_core", note = "import dependency: the Searches read compliance_core vulnerability facts (CVSS vector, KEV, EPSS) from compliance_vulnerability nodes. v0.8.7 is the floor of the base." },
+]
+
+# Pure Python, no cryptography and no native dependencies.
+[fips]
+status = "compatible"
+
+# The method's own two models: a stamp on a program and the archetypes it can name
+# (specs/spec-stackarmor-vdr-v0.md, req-stackarmor-vdr-stamp and -archetypes).
+[models]
+stackarmor_vdr__asset_profile = "tap_plugin.stackarmor_vdr.models.asset_profile.AssetProfile"
+stackarmor_vdr__archetype = "tap_plugin.stackarmor_vdr.models.archetype.Archetype"
+
+[edges]
+PROFILES_PROGRAM__stackarmor_vdr = "edges/PROFILES_PROGRAM__stackarmor_vdr.edge.json"
+USES_ARCHETYPE__stackarmor_vdr = "edges/USES_ARCHETYPE__stackarmor_vdr.edge.json"
+
+[grift]
+archetypes = "grift/archetypes.grift.json"
+
+# Module Search runners (req-stackarmor-vdr-search-7).
+[searches]
+stackarmor-pain = "tap_plugin.stackarmor_vdr.searches.pain.stackarmor_pain"
+stackarmor-assets = "tap_plugin.stackarmor_vdr.searches.pain.stackarmor_assets"
+
+[[boot.records]]
+name = "ci"
+description = "RESERVED NAME (req-boot-bootstrap-ci-record): the stack this plugin's own tests run in — depends_on closure + self, offline, credential-free. The consumer flips self to editable."
+sha256 = "3316e2c25717962155b00b042b8532d2f7b3bcfcf4bf267f7f7406453b5605ec"

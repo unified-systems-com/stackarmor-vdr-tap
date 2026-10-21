@@ -1,0 +1,30 @@
+# Identity chain (pre-boot conformance gate enforces agreement):
+#   slug = "stackarmor_vdr"  ·  distribution = "stackarmor-vdr-tap"  ·  import namespace = "tap_plugin.stackarmor_vdr"
+#   entry-point key = "stackarmor_vdr"
+# Spec: specs/spec-stackarmor-vdr-v0.md.
+[project]
+name = "stackarmor-vdr-tap"
+description = "TAP StackArmor VDR plugin — the stackArmor deterministic, CVSS-environmental PAIN method for FedRAMP VDR."
+requires-python = ">=3.14"
+dynamic = ["version"]
+dependencies = ["fedramp-20x-vdr-tap", "computing-core-tap", "compliance-core-tap"]
+
+[project.entry-points."tap.plugins"]
+stackarmor_vdr = "tap_plugin.stackarmor_vdr.apps:StackarmorVdrConfig"
+
+# The plugin's OWN dev closure (PEP 735), so its suite runs in a bare checkout. Never installed by boot.
+[dependency-groups]
+dev = ["pytest>=8.3", "pytest-django>=4.9", "factory-boy>=3.3"]
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+fallback_version = "0.0.0"
+
+[tool.hatch.build.targets.wheel]
+only-include = ["tap_plugin/stackarmor_vdr"]

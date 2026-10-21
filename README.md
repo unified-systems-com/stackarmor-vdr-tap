@@ -8,7 +8,7 @@ The method's own vocabulary lives here and adds nothing to the nodes and edges t
 
 ## Read first
 
-`specs/spec-stackarmor-vdr-v0.md`, once the spec PR is merged. Until then the spec is on the PR branch `spec/stackarmor-vdr-v0`.
+`specs/spec-stackarmor-vdr-v0.md`.
 
 ## Depends on
 
@@ -22,4 +22,12 @@ From a TAP core checkout:
 scripts/spawn-session.sh <label> cli --from 'git+https://github.com/CriticalSecLLC/stackarmor-vdr-tap@<rev>#ci' --dev-plugins stackarmor_vdr
 ```
 
-The `ci` record is added with the plugin itself; it is not in the repository yet.
+The `ci` record ships in the package (`tap_plugin/stackarmor_vdr/boot/ci.boot.json`); until the first release it pins this plugin at the placeholder `v0.0.0`, which the consumer flips to the checkout under test.
+
+## What it ships
+
+- `stackarmor_vdr__asset_profile` and `stackarmor_vdr__archetype` nodes, the `PROFILES_PROGRAM__stackarmor_vdr` and `USES_ARCHETYPE__stackarmor_vdr` edges, and the sixteen archetypes of the memo's Appendix A as a seed.
+- Two `module` Search runners, `stackarmor-pain` (a score, N-level and deadline per open finding per owner, with every input in the row) and `stackarmor-assets` (the profile each node resolves to). Their parameters are one `INPUT_SCHEMA` in `searches/pain.py`; a Search node copies it. Nothing is stored.
+- The pure method: `score.py`, `impact.py`, `exposure.py` (Django-free).
+
+A row whose `profile_source` is `unclassified` or `container`, or whose `multi_agency_source` is `assumed`, is the conservative compatibility result, not an evidenced derivation.
