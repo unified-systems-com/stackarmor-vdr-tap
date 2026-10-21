@@ -37,7 +37,7 @@ Three states. A value the plugin cannot know is reported as assumed, never as th
 | --- | --- | --- |
 | 1 | Reproducible Score | The same finding, asset and parameters give the same N-level, and a reviewer can redo it by hand from the row. |
 | 2 | Conservative By Default | A missing input raises the score and is named, never silently lowers it. |
-| 3 | Governed Parameters | Weights, thresholds and the archetype catalog are Search input defaults with history, not constants in code. |
+| 3 | Governed Parameters | Weights and thresholds are Search input defaults, and the archetype catalog is data in the grid, both with history and neither a constant in code. |
 | 4 | One Method, Reusable Base | The plugin holds only what is the method's own, so another method can sit beside it. |
 
 ## Requirements
@@ -47,8 +47,8 @@ Three states. A value the plugin cannot know is reported as assumed, never as th
 | req-stackarmor-vdr-score | [The Score](#the-score) | Proposed | The pure function from impact, requirements and the affected-agency flag to U, S, the word and the N-level. |
 | req-stackarmor-vdr-impact | [Impact From The Vector](#impact-from-the-vector) | Proposed | C, I and A from a CVSS 3.0, 3.1 or 4.0 vector; a missing vector is High. |
 | req-stackarmor-vdr-exposure | [Likely Exploitable](#likely-exploitable) | Proposed | LEV from KEV and EPSS thresholds that depend on reachability. |
-| req-stackarmor-vdr-stamp | [Asset Profile Stamp](#asset-profile-stamp) | Proposed | The `asset_profile` node, a stamp holding an archetype or an explicit CR, IR and AR with its rationale, and the `PROFILES_PROGRAM` edge to the program it describes. |
-| req-stackarmor-vdr-archetypes | [Archetype Catalog](#archetype-catalog) | Proposed | The catalog from archetype to CR, IR and AR, as a Search default. |
+| req-stackarmor-vdr-stamp | [Asset Profile Stamp](#asset-profile-stamp) | Proposed | The `asset_profile` node, a stamp holding an explicit CR, IR and AR or pointing at an archetype, with its rationale, and the `PROFILES_PROGRAM` edge to the program it describes. |
+| req-stackarmor-vdr-archetypes | [Archetype Catalog](#archetype-catalog) | Proposed | The `archetype` node, one per archetype carrying its CR, IR and AR, the sixteen memo entries seeded as data, and the `USES_ARCHETYPE` edge a stamp uses to name one. |
 | req-stackarmor-vdr-search | [The PAIN Search](#the-pain-search) | Proposed | The `stackarmor-pain` and `stackarmor-assets` `module` Search runners, which read the stamps, reduce them with the base and score. |
 | req-stackarmor-vdr-nongoals | [v0 Non-Goals](#v0-non-goals) | Proposed | What this version does not build. |
 | req-stackarmor-vdr-ceiling | [Intended-Use Ceiling](#v0-non-goals) | Backlog | The Security Requirements ceiling per agency scope; until it exists the result is the uncapped, conservative compatibility mode and says so. |
@@ -137,11 +137,10 @@ Entity type `stackarmor_vdr__asset_profile`, `NATURAL_KEY = ("source", "stamp_ke
 | `source` | Required. Who made the stamp (a collector, a person, a seed). |
 | `stamp_key` | Required. The source's own name for the stamp, unique within the source. |
 | `scheme` | Required, free text, default `stackarmor`. The evaluation scheme the stamp serves, so the Search can filter on it. |
-| `archetype` | An archetype name, or null. |
 | `cr`, `ir`, `ar` | `low`, `medium`, `high`, or null. An explicit value for one objective. |
 | `rationale` | Required text: why this profile. The memo asks for the evidence and rationale to be retained. |
 
-A stamp must carry an archetype or at least one of `cr`, `ir`, `ar`; one with none is refused. Per objective, an explicit value beats the archetype's value (the memo's per-asset override), so an override of one objective leaves the others on the archetype. A stamp is not containment of the program and not contained by it.
+A stamp names an archetype by a `USES_ARCHETYPE` edge (see Archetype Catalog) and may also carry explicit `cr`, `ir`, `ar`. A stamp with neither an archetype edge nor an explicit value says nothing and reads as unclassified. Per objective, an explicit value beats the archetype's value (the memo's per-asset override), so an override of one objective leaves the others on the archetype. A stamp is not containment of the program and not contained by it.
 
 Edge `PROFILES_PROGRAM__stackarmor_vdr`, `<asset_profile> PROFILES_PROGRAM <program>`, sources `stackarmor_vdr__asset_profile`, targets `computing_core__program` only. It is a reference with the plain identity (`discriminators: []`), no properties and the default dimensions above. Its target is a program because the profile is stamped on the program only. A program may have several stamps (another source, another scheme); the Search filters by `scheme` and, if several remain, takes the per-objective maximum with the base's reducer, so a second stamp never lowers the result.
 
@@ -150,9 +149,9 @@ Edge `PROFILES_PROGRAM__stackarmor_vdr`, `<asset_profile> PROFILES_PROGRAM <prog
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-stackarmor-vdr-stamp-1 | Keyed By Source And Stamp Key | Proposed | The node declares `NATURAL_KEY = (source, stamp_key)` and both are required; the same pair is one node. | |
-| req-stackarmor-vdr-stamp-2 | Values Are Checked | Proposed | `cr`, `ir` and `ar` outside `low`, `medium`, `high` and null are refused, an `archetype` that is not a lower-case name is refused, and `rationale` and `scheme` are required. | |
-| req-stackarmor-vdr-stamp-3 | A Stamp Says Something | Proposed | A stamp with no archetype and none of `cr`, `ir`, `ar` is refused. | |
-| req-stackarmor-vdr-stamp-4 | An Explicit Objective Wins | Proposed | Per objective an explicit `cr`, `ir` or `ar` beats the archetype's value for that objective, which beats High. | The memo's override rule. |
+| req-stackarmor-vdr-stamp-2 | Values Are Checked | Proposed | `cr`, `ir` and `ar` outside `low`, `medium`, `high` and null are refused, and `rationale` and `scheme` are required. | |
+| req-stackarmor-vdr-stamp-3 | A Stamp Says Something | Proposed | A stamp with no `USES_ARCHETYPE` edge and none of `cr`, `ir`, `ar` is read as unclassified, High on all three objectives, with `profile_source` `unclassified`. | An edge arrives after its node, so the node cannot be refused for lacking one; the read fails safe instead. |
+| req-stackarmor-vdr-stamp-4 | An Explicit Objective Wins | Proposed | Per objective an explicit `cr`, `ir` or `ar` beats the named archetype's value for that objective, which beats High. | The memo's override rule. |
 | req-stackarmor-vdr-stamp-5 | The Edge Points At A Program Only | Proposed | `PROFILES_PROGRAM` connects an `asset_profile` to a `computing_core__program`; a host, a container or any other target is refused wherever an endpoint declares its edges. | Ruled by George, 2026-10-20. |
 | req-stackarmor-vdr-stamp-6 | Plain Reference | Proposed | The edge declares `identity: {discriminators: []}`, has no `property_schema` and is in no model's `CONTAINMENT_EDGES`. | |
 | req-stackarmor-vdr-stamp-7 | Several Stamps Never Lower | Proposed | A program with more than one stamp for the Search's scheme is scored on the per-objective maximum of them. | |
@@ -164,11 +163,23 @@ RID: `req-stackarmor-vdr-archetypes`
 
 Status: `Proposed`
 
+An archetype is a named shorthand for a set of requirements. The memo's illustrative catalog (its Appendix A) maps each to a CR, IR and AR, and the memo says the provider owns and justifies its own mapping. So the catalog is data in the grid: one node per archetype, which a provider reads on a page and changes by editing a node, not by a release. Ruled by George, 2026-10-21: one archetype node type, with an edge from the stamp.
+
 #### Implementation
 
-The memo's illustrative catalog (its Appendix A) maps an asset archetype to its CR, IR and AR. Archetype names use underscores for the memo's hyphens. The catalog is the `archetypes` default of the plugin's Searches, an object from the archetype name to `{cr, ir, ar}` (each `low`, `medium` or `high`), so a change is a reviewable change of a Search node. The catalog is the provider's own to choose and justify; the memo says it is one example derivation, not the standard.
+Entity type `stackarmor_vdr__archetype`, `NATURAL_KEY = ("name",)`, default dimensions `{"fedramp.rule": "vdr"}`.
 
-| Value | CR | IR | AR | Typical members |
+| Field | Meaning |
+| --- | --- |
+| `name` | Required. A lower-case name, underscores for the memo's hyphens. |
+| `cr`, `ir`, `ar` | Required. `low`, `medium` or `high`. |
+| `description` | Required text: the typical members and why this mapping. |
+
+Edge `USES_ARCHETYPE__stackarmor_vdr`, `<asset_profile> USES_ARCHETYPE <archetype>`, sources `stackarmor_vdr__asset_profile`, targets `stackarmor_vdr__archetype` only. It is a reference with the plain identity (`discriminators: []`), no properties and the default dimensions above. A stamp may name several archetypes; the Search takes the per-objective maximum of them with the base's reducer, so a second never lowers the result.
+
+The plugin seeds the memo's sixteen as reference data, with the source `stackarmor-memo-appendix-a`:
+
+| Name | CR | IR | AR | Typical members |
 | --- | :---: | :---: | :---: | --- |
 | `cicd_pipeline` | H | H | H | Build and deploy runners, artifact signing, registries |
 | `orchestrator` | H | H | H | Control plane, etcd, scheduler, coordination |
@@ -187,15 +198,19 @@ The memo's illustrative catalog (its Appendix A) maps an asset archetype to its 
 | `internal_tooling` | L | L | L | Dashboards, metrics and log agents |
 | `dev_test` | L | L | L | Non-production |
 
-The classification rule the memo recommends is control-plane first: an asset that can deploy, orchestrate, hold cross-estate credentials or actuate configuration is classified by that function, not by the data it stores. The stamp itself (which program carries which archetype) is the instance's data, a stamp node, not this plugin's. An archetype name a stamp carries that the catalog does not hold reads as unclassified, High on all three objectives.
+The classification rule the memo recommends is control-plane first: an asset that can deploy, orchestrate, hold cross-estate credentials or actuate configuration is classified by that function, not by the data it stores. Which program carries which archetype is the instance's data, a stamp node and its edge, not this plugin's. A stamp whose archetype edge points at nothing readable (the node is tombstoned, or no edge exists) reads as unclassified, High on all three objectives.
 
 #### Acceptance Criteria
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-stackarmor-vdr-archetypes-1 | Sixteen Archetypes | Proposed | The catalog holds exactly the sixteen archetypes of the table, with the table's CR, IR and AR. | |
-| req-stackarmor-vdr-archetypes-2 | Catalog Is A Search Default | Proposed | The catalog is the `archetypes` default of the Searches' input schema, keyed by the archetype name, and no constant in code duplicates it. | The memo requires governed configuration. |
-| req-stackarmor-vdr-archetypes-3 | Unknown Archetype Is Unclassified | Proposed | A stamp whose archetype the catalog does not hold gives High on all three objectives with `profile_source` `unclassified`. | Fail safe. |
+| req-stackarmor-vdr-archetypes-1 | Sixteen Archetypes Seeded | Proposed | The seed holds exactly the sixteen archetypes of the table, with the table's CR, IR and AR, and a re-seed adds no duplicate. | |
+| req-stackarmor-vdr-archetypes-2 | Catalog Is Data | Proposed | The Searches read each archetype's values from `archetype` nodes through `USES_ARCHETYPE`, and no constant, input default or other copy in code holds them. | The memo requires governed configuration; a node has the grid's history. |
+| req-stackarmor-vdr-archetypes-3 | Unknown Archetype Is Unclassified | Proposed | A stamp with no readable archetype and no explicit value gives High on all three objectives with `profile_source` `unclassified`. | Fail safe. |
+| req-stackarmor-vdr-archetypes-4 | Archetype Values Are Checked | Proposed | The node declares `NATURAL_KEY = (name)`; `name`, `cr`, `ir`, `ar` and `description` are required, `cr`, `ir` and `ar` outside `low`, `medium` and `high` are refused, and a name that is not lower-case with underscores is refused. | |
+| req-stackarmor-vdr-archetypes-5 | The Edge Joins A Stamp To An Archetype | Proposed | `USES_ARCHETYPE` connects an `asset_profile` to an `archetype` only, declares `identity: {discriminators: []}`, has no `property_schema` and is in no model's `CONTAINMENT_EDGES`. | |
+| req-stackarmor-vdr-archetypes-6 | Several Archetypes Never Lower | Proposed | A stamp with more than one archetype is scored on the per-objective maximum of them. | |
+| req-stackarmor-vdr-archetypes-7 | A Seed Never Overwrites An Edit | Proposed | Re-seeding creates a missing archetype and leaves an existing archetype of the same name as the instance has it. | The provider owns the mapping; the sixteen are a starting point. |
 
 ### The PAIN Search
 ----
@@ -207,17 +222,17 @@ Status: `Proposed`
 
 Two `module` Search runners in `tap_plugin/stackarmor_vdr/searches/`, under the read rules of `tap_grid.gryphon.read_scope`. They return rows and write nothing; the Search nodes that point at them are the instance's.
 
-**`stackarmor-pain`** imports the base's `reach_rows`. For each reach row it reads the stamp of each program involved by following `PROFILES_PROGRAM`, filtered by `scheme`, resolves each program's profile per objective (an explicit value, else the archetype's value from the catalog, else High), reduces the programs with the base's `reduce_profiles`, then computes the impact, the score, the exposure and the deadline. A program with no stamp counts as unclassified, High on all three. One row per finding per owner per container. Inputs, all with defaults: the weights, the three thresholds, both EPSS thresholds, `multi_agency` (default 1), `fedramp_class` (default `d`), `scheme` (default `stackarmor`), `evaluation_scheme` (default `max`), `archetypes`.
+**`stackarmor-pain`** imports the base's `reach_rows`. For each reach row it reads the stamp of each program involved by following `PROFILES_PROGRAM`, filtered by `scheme`, resolves each program's profile per objective (an explicit value, else the value of the archetype its stamp names through `USES_ARCHETYPE`, else High), reduces the programs with the base's `reduce_profiles`, then computes the impact, the score, the exposure and the deadline. A program with no stamp counts as unclassified, High on all three. One row per finding per owner per container. Inputs, all with defaults: the weights, the three thresholds, both EPSS thresholds, `multi_agency` (default 1), `fedramp_class` (default `d`), `scheme` (default `stackarmor`), `evaluation_scheme` (default `max`).
 
 **`stackarmor-assets`** returns one row for each node with `RUNS_PROGRAM` edges (a host, a container, an instance): the per-objective maximum of its programs' resolved profiles, reduced with the base, the program count and the classified count. It is computed on read and nothing is stamped on the asset (ruled by George, 2026-10-20).
 
-**`profile_source`.** `container` for a row owned by a container (its profile is the reduction of its programs). For a program owner: `override` when every objective came from an explicit value, `archetype` when an objective came from the catalog and none was unclassified, `unclassified` when any objective fell to High for want of a stamp or a catalog entry.
+**`profile_source`.** `container` for a row owned by a container (its profile is the reduction of its programs). For a program owner: `override` when every objective came from an explicit value, `archetype` when an objective came from an archetype node and none was unclassified, `unclassified` when any objective fell to High for want of a stamp or an archetype.
 
-**The row.** `finding_id`, `vuln_id`, `component`, `container_id`, `container` (the container in which the owner owns the package; a package node is shared by every host that installs it, so a program-owned row still names its container), `owner_kind`, `owner_id`, `owner`, `scheme`, `profile_source`, `impact_source`, `c`, `i`, `a`, `cr`, `ir`, `ar`, `u`, `s` (decimal strings), `word`, `m`, `multi_agency_source`, `pain`, `lev`, `irv`, `column`, `fedramp_class`, `deadline_hours`. Every input of the derivation is in the row, which is the audit trail the memo asks for.
+**The row.** `finding_id`, `vuln_id`, `component`, `component_id`, `container_id`, `container` (the container in which the owner owns the package; a package node is shared by every host that installs it, so a program-owned row still names its container), `owner_kind`, `owner_id`, `owner`, `scheme`, `profile_source`, `impact_source`, `c`, `i`, `a`, `cr`, `ir`, `ar`, `u`, `s` (decimal strings), `word`, `m`, `multi_agency_source`, `pain`, `lev`, `irv`, `column`, `fedramp_class`, `deadline_hours`. Every input of the derivation is in the row, which is the audit trail the memo asks for.
 
 **The affected-agency flag.** `m` is the Search input `multi_agency`, default 1, the worst case, and the row says it was assumed. A per-asset flag is Backlog.
 
-**Governed parameters.** The weights, the three thresholds, both EPSS thresholds and the catalog are Search input defaults, so they have history and a reviewer can see a change. The memo says they must not be changed after seeing a finding's deadline.
+**Governed parameters.** The weights, the three thresholds and both EPSS thresholds are Search input defaults, and the catalog is archetype nodes, so each has history and a reviewer can see a change. The memo says they must not be changed after seeing a finding's deadline.
 
 #### Acceptance Criteria
 
@@ -225,13 +240,13 @@ Two `module` Search runners in `tap_plugin/stackarmor_vdr/searches/`, under the 
 | --- | --- | :---: | --- | --- |
 | req-stackarmor-vdr-search-1 | One Row Per Finding And Owner | Proposed | The Search returns the base's reach rows, one per open finding and owner, each with a score. | Ruled by George, 2026-10-20. |
 | req-stackarmor-vdr-search-2 | Derivation In The Row | Proposed | Every row carries every input and intermediate listed under "The row", so a reviewer can redo it by hand. | |
-| req-stackarmor-vdr-search-3 | Parameters Are Search Defaults | Proposed | The weights, thresholds, EPSS thresholds, scheme and catalog are declared in the runner's input schema with defaults, and no constant in code duplicates one. | |
+| req-stackarmor-vdr-search-3 | Parameters Are Search Defaults | Proposed | The weights, thresholds, EPSS thresholds and scheme are declared in the runner's input schema with defaults, and no constant in code duplicates one. The catalog is the archetype nodes (`req-stackarmor-vdr-archetypes-2`). | |
 | req-stackarmor-vdr-search-4 | Agencies Assumed Visibly | Proposed | `m` is the input `multi_agency`, default 1, and every row carries `multi_agency_source`. | The worst case. |
 | req-stackarmor-vdr-search-5 | Nothing Is Stored | Proposed | Neither runner writes a node or an edge, and the evaluation's `pain` stays refused. The stamp node is the instance's data, written by whoever stamps. | |
 | req-stackarmor-vdr-search-6 | Unclassified Is Not Evidence | Proposed | A Search's description says that a row with `profile_source` `unclassified` or `container`, or with `multi_agency_source` assumed, is the conservative compatibility result and not an evidenced, agency-specific derivation. | The memo forbids describing it as evidenced. |
 | req-stackarmor-vdr-search-7 | Runner Keys | Proposed | The runners are registered as `tap_plugin.stackarmor_vdr.searches.pain:stackarmor-pain` and `tap_plugin.stackarmor_vdr.searches.pain:stackarmor-assets`, the keys the instance's Searches name. | |
-| req-stackarmor-vdr-search-8 | Dependency Floor | Proposed | `depends_on` and the dependency floor name `fedramp_20x_vdr` at the first release that ships `reach_rows` and the deadline function, and `compliance_core` at the release that ships the vulnerability fields read. | The floor rises when that release is cut. |
-| req-stackarmor-vdr-search-9 | Stamps Are Read Through The Edge | Proposed | The Search reads a program's profile only from `asset_profile` nodes reached by `PROFILES_PROGRAM` with the Search's `scheme`, and from no dimension key. | |
+| req-stackarmor-vdr-search-8 | Dependency Floor | Proposed | `depends_on` and the dependency floor name `fedramp_20x_vdr` at v0.1.2 (the release that ships `reach_rows`, `reduce_profiles`, `exposure_column`, `backed_factors` and `deadline_hours`), `computing_core` at v0.10.2 and `compliance_core` at v0.8.7. | Released pins as of 2026-10-21. |
+| req-stackarmor-vdr-search-9 | Stamps Are Read Through The Edge | Proposed | The Search reads a program's profile only from `asset_profile` nodes reached by `PROFILES_PROGRAM` with the Search's `scheme`, and their archetypes only through `USES_ARCHETYPE`, and from no dimension key. | |
 | req-stackarmor-vdr-search-10 | Rows Carry Their Scheme | Proposed | Every row of both Searches carries `scheme`, the Search input. | So the result can be compared with another scheme's. |
 
 ### v0 Non-Goals
@@ -246,20 +261,22 @@ This version does not:
 - decide which asset a finding belongs to, or compute reachability: both are the base's;
 - implement the memo's intended-use ceiling, mitigation ladder, per-asset agency flag or per-library profile (the Backlog rows), or the memo's cross-system aggregation of CVSS v4.0 subsequent-system impact, which the memo itself does not specify;
 - ship pages or panels: the Searches are the surface other pages read;
-- ship any model or edge beyond the stamp and its edge.
+- ship any model or edge beyond the stamp, the archetype and their two edges.
 
 ## Model catalog
 
 | Model | Entity type | Category | Rationale |
 | --- | --- | --- | --- |
 | Asset Profile | `stackarmor_vdr__asset_profile` | Evaluation input | The method's judgment of what a program requires, kept apart from the program so the system's own nodes are untouched. |
+| Archetype | `stackarmor_vdr__archetype` | Reference | A named set of requirements (CR, IR, AR) a stamp can point at, so the catalog is data a provider can read and change. |
 
 ## Edge types
 
 | Edge | From → To | Properties | Rationale |
 | --- | --- | --- | --- |
 | `PROFILES_PROGRAM__stackarmor_vdr` | `asset_profile` → `computing_core__program` | none | The stamp points at the thing it describes; a program only, because the profile is stamped there. |
+| `USES_ARCHETYPE__stackarmor_vdr` | `asset_profile` → `archetype` | none | The stamp names the archetype whose requirements it takes. |
 
 ## Reference data
 
-The plugin seeds no data. The archetype catalog is a Search default (`req-stackarmor-vdr-archetypes-2`) and stamps are the instance's.
+The plugin seeds the sixteen archetype nodes of `req-stackarmor-vdr-archetypes-1` and nothing else. Stamps are the instance's.
