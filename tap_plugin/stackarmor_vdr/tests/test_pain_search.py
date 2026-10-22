@@ -128,6 +128,12 @@ class TestRow:
         assert levels(row) == ("medium", "medium", "medium")
         assert (row["u"], row["word"], row["pain"]) == ("0.914816", "Disruptive", "N4")
         assert row["pain_rank"] == 4
+        assert row["cve"] == "CVE-2026-1" and row["vuln_id"] != row["cve"]
+        assert (row["owner_type"], row["component_type"], row["container_type"]) == (
+            "computing_core__program",
+            "computing_core__package",
+            "computing_core__host",
+        )
         assert row["profile_source"] == "archetype" and row["scheme"] == "stackarmor"
 
     @pytest.mark.spec("req-stackarmor-vdr-search-1")
