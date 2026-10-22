@@ -39,7 +39,7 @@
         "source": {
           "type": "git",
           "url": "https://github.com/CriticalSecLLC/stackarmor-vdr-tap",
-          "rev": "v0.2.0"
+          "rev": "v0.3.0"
         }
       }
     ]

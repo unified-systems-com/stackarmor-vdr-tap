@@ -1,5 +1,5 @@
 manifest_version = "0"
-plugin_version = "0.2.0" # x-release-please-version
+plugin_version = "0.3.0" # x-release-please-version
 requires_tap = ">=0.3.0"
 slug = "stackarmor_vdr"
 name = "StackArmor VDR"
@@ -33,8 +33,9 @@ archetypes = "grift/archetypes.grift.json"
 stackarmor-pain = "tap_plugin.stackarmor_vdr.searches.pain.stackarmor_pain"
 stackarmor-assets = "tap_plugin.stackarmor_vdr.searches.pain.stackarmor_assets"
 stackarmor-summary = "tap_plugin.stackarmor_vdr.searches.pain.stackarmor_summary"
+stackarmor-trace = "tap_plugin.stackarmor_vdr.searches.pain.stackarmor_trace"
 
 [[boot.records]]
 name = "ci"
 description = "RESERVED NAME (req-boot-bootstrap-ci-record): the stack this plugin's own tests run in — depends_on closure + self, offline, credential-free. The consumer flips self to editable."
-sha256 = "01c73dd9825e1dedfaca485ddd4aa585685a254fea124ed373440ad011a21b19"
+sha256 = "facf43f6df6c4a253dce50b5571069bdc096daf7eff19a568df06e33c00899dd"
