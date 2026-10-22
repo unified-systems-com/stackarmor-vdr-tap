@@ -50,10 +50,11 @@ Three states. A value the plugin cannot know is reported as assumed, never as th
 | req-stackarmor-vdr-stamp | [Asset Profile Stamp](#asset-profile-stamp) | Implemented | The `asset_profile` node, a stamp holding an explicit CR, IR and AR or pointing at an archetype, with its rationale, and the `PROFILES_PROGRAM` edge to the program it describes. |
 | req-stackarmor-vdr-archetypes | [Archetype Catalog](#archetype-catalog) | Implemented | The `archetype` node, one per archetype carrying its CR, IR and AR, the sixteen memo entries seeded as data, and the `USES_ARCHETYPE` edge a stamp uses to name one. |
 | req-stackarmor-vdr-search | [The PAIN Search](#the-pain-search) | Implemented | The `stackarmor-pain` and `stackarmor-assets` `module` Search runners, which read the stamps, reduce them with the base and score. |
+| req-stackarmor-vdr-summary | [Summary Counts](#summary-counts) | Implemented | The `stackarmor-summary` `module` Search runner: counts of the `stackarmor-pain` rows by PAIN level and by what was assumed, for charts and cards. |
 | req-stackarmor-vdr-nongoals | [v0 Non-Goals](#v0-non-goals) | Implemented | What this version does not build. |
 | req-stackarmor-vdr-ceiling | [Intended-Use Ceiling](#v0-non-goals) | Backlog | The Security Requirements ceiling per agency scope; until it exists the result is the uncapped, conservative compatibility mode and says so. |
 | req-stackarmor-vdr-mitigation | [Mitigation Ladder](#v0-non-goals) | Backlog | Evidence-gated Modified C/I/A (High to Low, never None), the residual-response PAIN proxy and the retained consequence PAIN. |
-| req-stackarmor-vdr-agencies | [Affected Agencies](#v0-non-goals) | Backlog | The affected-agency flag per asset or finding, from governed hierarchical metadata, and the ephemeral-workload exclusion. This version takes both as Search inputs. |
+| req-stackarmor-vdr-agencies | [Affected Agencies](#v0-non-goals) | Backlog | The affected-agency flag from governed hierarchical metadata, and the ephemeral-workload exclusion. A program's stamp may state the flag (`req-stackarmor-vdr-stamp-9`); the rest takes the Search input. |
 | req-stackarmor-vdr-library | [Library Profile](#v0-non-goals) | Backlog | A profile for a library or package inside its program, for operators who want finer than the program level. |
 | req-stackarmor-vdr-trigger | [Indirect Triggers](#v0-non-goals) | Backlog | The companion paper's carried-content and chained branches of reachability: a CVE-level indirect-trigger status, the CAPEC chain table and the CVE record references a reviewer needs. Parts belong to `compliance_core` (references) and `fedramp_20x_vdr` (the reachability computation). |
 
@@ -138,6 +139,7 @@ Entity type `stackarmor_vdr__asset_profile`, `NATURAL_KEY = ("source", "stamp_ke
 | `stamp_key` | Required. The source's own name for the stamp, unique within the source. |
 | `scheme` | Required, free text, default `stackarmor`. The evaluation scheme the stamp serves, so the Search can filter on it. |
 | `cr`, `ir`, `ar` | `low`, `medium`, `high`, or null. An explicit value for one objective. |
+| `multi_agency` | `0`, `1` or null. The affected-agency flag `m` for this program: `1` when more than one agency is affected, `0` for one, null says nothing. Added in v0.2.0. |
 | `rationale` | Required text: why this profile. The memo asks for the evidence and rationale to be retained. |
 
 A stamp names an archetype by a `USES_ARCHETYPE` edge (see Archetype Catalog) and may also carry explicit `cr`, `ir`, `ar`. A stamp with neither an archetype edge nor an explicit value says nothing and reads as unclassified. Per objective, an explicit value beats the archetype's value (the memo's per-asset override), so an override of one objective leaves the others on the archetype. A stamp is not containment of the program and not contained by it.
@@ -155,6 +157,7 @@ Edge `PROFILES_PROGRAM__stackarmor_vdr`, `<asset_profile> PROFILES_PROGRAM <prog
 | req-stackarmor-vdr-stamp-5 | The Edge Points At A Program Only | Implemented | `PROFILES_PROGRAM` connects an `asset_profile` to a `computing_core__program`; a host, a container or any other target is refused wherever an endpoint declares its edges. | Ruled by George, 2026-10-20. |
 | req-stackarmor-vdr-stamp-6 | Plain Reference | Implemented | The edge declares `identity: {discriminators: []}`, has no `property_schema` and is in no model's `CONTAINMENT_EDGES`. | |
 | req-stackarmor-vdr-stamp-7 | Several Stamps Never Lower | Implemented | A program with more than one stamp for the Search's scheme is scored on the per-objective maximum of them. | |
+| req-stackarmor-vdr-stamp-9 | A Stamp May State The Agency Flag | Implemented | `multi_agency` outside `0`, `1` and null is refused; a program's flag is the highest value any of its stamps states, and a program with none stated uses the Search input `multi_agency`. | The flag is the method's own judgment, so it lives on the stamp and changes no system node. Several stamps never lower it. |
 | req-stackarmor-vdr-stamp-8 | Nothing Describing The System Changes | Implemented | The plugin adds no field, dimension or edge to a `program`, `host`, `container` or any node it does not ship. | Ruled by George, 2026-10-21. |
 
 ### Archetype Catalog
@@ -230,7 +233,7 @@ Two `module` Search runners in `tap_plugin/stackarmor_vdr/searches/`, under the 
 
 **The row.** `finding_id`, `vuln_id`, `component`, `component_id`, `container_id`, `container` (the container in which the owner owns the package; a package node is shared by every host that installs it, so a program-owned row still names its container), `owner_kind`, `owner_id`, `owner`, `scheme`, `profile_source`, `impact_source`, `c`, `i`, `a`, `cr`, `ir`, `ar`, `u`, `s` (decimal strings), `word`, `m`, `multi_agency_source`, `pain`, `lev`, `irv`, `column`, `fedramp_class`, `deadline_hours`. Every input of the derivation is in the row, which is the audit trail the memo asks for.
 
-**The affected-agency flag.** `m` is the Search input `multi_agency`, default 1, the worst case, and the row says it was assumed. A per-asset flag is Backlog.
+**The affected-agency flag.** A program's `m` is the highest `multi_agency` value its stamps state (`req-stackarmor-vdr-stamp-9`); a program that states none uses the Search input `multi_agency`, default 1, the worst case. A container-owned row takes the highest `m` over the programs involved, each counted at the input default when it states none. `multi_agency_source` is `stamp` when every program involved stated its flag, else `assumed`. A flag from governed hierarchical metadata is Backlog.
 
 **Governed parameters.** The weights, the three thresholds and both EPSS thresholds are Search input defaults, and the catalog is archetype nodes, so each has history and a reviewer can see a change. The memo says they must not be changed after seeing a finding's deadline.
 
@@ -241,13 +244,40 @@ Two `module` Search runners in `tap_plugin/stackarmor_vdr/searches/`, under the 
 | req-stackarmor-vdr-search-1 | One Row Per Finding And Owner | Implemented | The Search returns the base's reach rows, one per open finding and owner, each with a score. | Ruled by George, 2026-10-20. |
 | req-stackarmor-vdr-search-2 | Derivation In The Row | Implemented | Every row carries every input and intermediate listed under "The row", so a reviewer can redo it by hand. | |
 | req-stackarmor-vdr-search-3 | Parameters Are Search Defaults | Implemented | The weights, thresholds, EPSS thresholds and scheme are declared in the runner's input schema with defaults, and no constant in code duplicates one. The catalog is the archetype nodes (`req-stackarmor-vdr-archetypes-2`). | |
-| req-stackarmor-vdr-search-4 | Agencies Assumed Visibly | Implemented | `m` is the input `multi_agency`, default 1, and every row carries `multi_agency_source`. | The worst case. |
+| req-stackarmor-vdr-search-4 | Agencies Assumed Visibly | Implemented | `m` is the stamp's `multi_agency` when the program states one, else the input `multi_agency` (default 1), and every row carries `multi_agency_source` (`stamp` or `assumed`). | The worst case when nothing is stated. |
 | req-stackarmor-vdr-search-5 | Nothing Is Stored | Implemented | Neither runner writes a node or an edge, and the evaluation's `pain` stays refused. The stamp node is the instance's data, written by whoever stamps. | |
 | req-stackarmor-vdr-search-6 | Unclassified Is Not Evidence | Implemented | A Search's description says that a row with `profile_source` `unclassified` or `container`, or with `multi_agency_source` assumed, is the conservative compatibility result and not an evidenced, agency-specific derivation. | The memo forbids describing it as evidenced. |
 | req-stackarmor-vdr-search-7 | Runner Keys | Implemented | The runners are registered as `tap_plugin.stackarmor_vdr.searches.pain:stackarmor-pain` and `tap_plugin.stackarmor_vdr.searches.pain:stackarmor-assets`, the keys the instance's Searches name. | |
 | req-stackarmor-vdr-search-8 | Dependency Floor | Implemented | `depends_on` and the dependency floor name `fedramp_20x_vdr` at v0.1.2 (the release that ships `reach_rows`, `reduce_profiles`, `exposure_column`, `backed_factors` and `deadline_hours`), `computing_core` at v0.10.2 and `compliance_core` at v0.8.7. | Released pins as of 2026-10-21. |
 | req-stackarmor-vdr-search-9 | Stamps Are Read Through The Edge | Implemented | The Search reads a program's profile only from `asset_profile` nodes reached by `PROFILES_PROGRAM` with the Search's `scheme`, and their archetypes only through `USES_ARCHETYPE`, and from no dimension key. | |
+| req-stackarmor-vdr-search-11 | One Vulnerability | Implemented | The optional input `vuln_id` limits `stackarmor-pain` to the rows of that vulnerability. | Lets a page show one CVE across different assets. |
 | req-stackarmor-vdr-search-10 | Rows Carry Their Scheme | Implemented | Every row of both Searches carries `scheme`, the Search input. | So the result can be compared with another scheme's. |
+
+### Summary Counts
+----
+RID: `req-stackarmor-vdr-summary`
+
+Status: `Implemented`
+
+A chart or a card needs counts, and `stackarmor-pain` returns one row per finding and owner. `stackarmor-summary` is the `module` Search runner that counts those rows, using the same computation (`pain_rows`) so the counts can never differ from the rows.
+
+#### Implementation
+
+Inputs: those of `stackarmor-pain` except `entity_id`, `vuln_id` and `max_results`, plus `view` (`by_pain` default, or `assumptions`). It stores nothing.
+
+| View | Rows |
+| --- | --- |
+| `by_pain` | Five rows, N1 to N5, each with `pain`, `rows` (the count, 0 when none) and `percent` (of all rows to one decimal, null when there are none). |
+| `assumptions` | One row: `rows`, `unclassified`, `container_owned`, `archetype`, `override` (by `profile_source`), `assumed_impact`, `assumed_agency` and `stamped_agency`. |
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-stackarmor-vdr-summary-1 | Counts Match The Rows | Implemented | The `by_pain` counts sum to the number of `stackarmor-pain` rows for the same inputs, and every N-level is listed, with 0 where none. | |
+| req-stackarmor-vdr-summary-2 | Assumptions Are Counted | Implemented | The `assumptions` row counts rows by `profile_source`, rows whose `impact_source` is `assumed`, and rows whose `multi_agency_source` is `assumed` and `stamp`, from the same rows. | |
+| req-stackarmor-vdr-summary-3 | Registered | Implemented | The runner is registered as `tap_plugin.stackarmor_vdr.searches.pain:stackarmor-summary` and writes nothing. | |
+| req-stackarmor-vdr-summary-4 | Bad Input Refused | Implemented | An unknown input or a `view` other than the two is refused with a `ValueError` naming it. | |
 
 ### v0 Non-Goals
 ----
@@ -262,6 +292,8 @@ This version does not:
 - implement the memo's intended-use ceiling, mitigation ladder, per-asset agency flag or per-library profile (the Backlog rows), or the memo's cross-system aggregation of CVSS v4.0 subsequent-system impact, which the memo itself does not specify;
 - ship pages or panels: the Searches are the surface other pages read;
 - ship any model or edge beyond the stamp, the archetype and their two edges.
+
+The model catalog and edge list above are unchanged by v0.2.0; the stamp gains one field (`multi_agency`).
 
 ## Model catalog
 

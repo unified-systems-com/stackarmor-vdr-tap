@@ -27,7 +27,8 @@ The `ci` record ships in the package (`tap_plugin/stackarmor_vdr/boot/ci.boot.js
 ## What it ships
 
 - `stackarmor_vdr__asset_profile` and `stackarmor_vdr__archetype` nodes, the `PROFILES_PROGRAM__stackarmor_vdr` and `USES_ARCHETYPE__stackarmor_vdr` edges, and the sixteen archetypes of the memo's Appendix A as a seed.
-- Two `module` Search runners, `stackarmor-pain` (a score, N-level and deadline per open finding per owner, with every input in the row) and `stackarmor-assets` (the profile each node resolves to). Their parameters are one `INPUT_SCHEMA` in `searches/pain.py`; a Search node copies it. Nothing is stored.
+- Three `module` Search runners, `stackarmor-pain` (a score, N-level and deadline per open finding per owner, with every input in the row; `vuln_id` limits it to one vulnerability), `stackarmor-assets` (the profile each node resolves to) and `stackarmor-summary` (counts by PAIN level and by what was assumed, for charts and cards). Their parameters are one `INPUT_SCHEMA` in `searches/pain.py`; a Search node copies it. Nothing is stored.
+- A stamp may state the affected-agency flag `multi_agency` (0 or 1) for its program; a program that states none uses the Search input, default 1, and the row says which.
 - The pure method: `score.py`, `impact.py`, `exposure.py` (Django-free).
 
 A row whose `profile_source` is `unclassified` or `container`, or whose `multi_agency_source` is `assumed`, is the conservative compatibility result, not an evidenced derivation.

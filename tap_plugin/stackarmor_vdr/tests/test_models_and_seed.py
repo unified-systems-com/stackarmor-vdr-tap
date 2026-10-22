@@ -117,6 +117,13 @@ class TestStamp:
         del payload[missing]
         assert not create_node(PROFILE, payload).success
 
+    @pytest.mark.spec("req-stackarmor-vdr-stamp-9")
+    @pytest.mark.parametrize(
+        ("value", "ok"), [(0, True), (1, True), (None, True), (2, False), (-1, False), ("1", False), (True, False)]
+    )
+    def test_the_agency_flag_is_zero_one_or_null(self, value: Any, ok: bool) -> None:
+        assert create_node(PROFILE, _stamp(multi_agency=value)).success is ok
+
     @pytest.mark.spec("req-stackarmor-vdr-stamp-5")
     def test_a_stamp_points_at_a_program_and_not_at_a_host(self) -> None:
         stamp = _node(PROFILE, _stamp())
