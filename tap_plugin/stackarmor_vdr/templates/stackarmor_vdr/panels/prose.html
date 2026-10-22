@@ -1,0 +1,35 @@
+<div class="tap-panel tap-panel--sa-prose">
+    {% if not panel.config.hide_header %}{% include "tap_web/panel_header.html" %}{% endif %}
+    {% if state == "bad_config" %}
+    <p class="sa-prose-empty">Panel config invalid: {{ detail }}</p>
+    {% elif variant == "method" %}
+    <article class="sa-prose sa-prose--method">
+        {% for para in paragraphs %}
+        <p class="sa-prose__p{% if forloop.first %} sa-prose__p--lead{% endif %}{% if para.formula %} sa-prose__p--formula{% endif %}">
+            {% for line in para.lines %}<span class="sa-prose__line{% if line.formula %} sa-prose__line--formula{% endif %}">{% if line.label %}<span class="sa-prose__label">{{ line.label }}:</span> {% endif %}{{ line.text }}</span>{% endfor %}
+        </p>
+        {% endfor %}
+    </article>
+    {% elif variant == "steps" %}
+    <div class="sa-prose sa-prose--steps">
+        {% for line in intro %}<p class="sa-prose__p">{{ line }}</p>{% endfor %}
+        {% if steps %}
+        <ol class="sa-steps">
+            {% for step in steps %}
+            <li class="sa-steps__item{% if not step.title %} sa-steps__item--bare{% endif %}">
+                {% if step.title %}<span class="sa-steps__title">{{ step.title }}</span>{% endif %}
+                <span class="sa-steps__body">{{ step.body }}</span>
+            </li>
+            {% endfor %}
+        </ol>
+        {% endif %}
+        {% for line in notes %}<p class="sa-prose__note">{{ line }}</p>{% endfor %}
+    </div>
+    {% else %}
+    <div class="sa-prose sa-prose--plain">
+        {% for para in paragraphs %}
+        <p class="sa-prose__p">{% for line in para %}{% if not forloop.first %}<br>{% endif %}{{ line }}{% endfor %}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>

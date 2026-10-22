@@ -1,0 +1,124 @@
+/* stackarmor_prose panel (req-stackarmor-vdr-panel-prose). BEM under .sa-prose / .sa-steps.
+   Every colour is a TAP theme token (tap_web/static/tap_web/css/theme.css), which the theme redefines for dark,
+   so no dark-mode block is needed here (req-web-theme-scope): no hex, no rgb literals. */
+
+.tap-panel--sa-prose {
+  --sa-ink: rgb(var(--tap-slate-800));
+  --sa-body: rgb(var(--tap-slate-700));
+  --sa-muted: rgb(var(--tap-slate-600));
+  --sa-rule: rgb(var(--tap-slate-200));
+  --sa-tint: rgb(var(--tap-slate-50));
+  --sa-surface: rgb(var(--tap-white));
+  --sa-accent: rgb(var(--tap-blue-600));
+  --sa-accent-ink: rgb(var(--tap-blue-700));
+  --sa-serif: Charter, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sa-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  container-type: inline-size;
+}
+
+.sa-prose { color: var(--sa-body); margin-top: 0.6rem; }
+.sa-prose p { margin: 0; }
+
+.sa-prose-empty { color: var(--sa-muted); font-style: italic; }
+
+/* Shared card: a soft tint, a hairline border and one accent rule. */
+.sa-prose--method,
+.sa-prose--plain {
+  background: var(--sa-tint);
+  border: 1px solid var(--sa-rule);
+  border-left: 3px solid var(--sa-accent);
+  border-radius: 0.375rem;
+  padding: 1.25rem 1.5rem 1.4rem;
+}
+
+/* Plain */
+.sa-prose--plain { font-family: var(--sa-sans); font-size: 0.95rem; line-height: 1.65; max-width: 72ch; }
+.sa-prose--plain .sa-prose__p + .sa-prose__p { margin-top: 0.9em; }
+
+/* Method */
+.sa-prose--method { max-width: 46rem; font-family: var(--sa-serif); font-size: 1rem; line-height: 1.7; }
+.sa-prose--method .sa-prose__p { max-width: 68ch; }
+.sa-prose--method .sa-prose__p + .sa-prose__p { margin-top: 1.05em; }
+.sa-prose--method .sa-prose__p--lead { font-size: 1.1rem; line-height: 1.65; color: var(--sa-ink); }
+.sa-prose__line { display: block; }
+.sa-prose__line + .sa-prose__line { margin-top: 0.35em; }
+.sa-prose__label {
+  font-family: var(--sa-sans);
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--sa-accent-ink);
+  margin-right: 0.35em;
+}
+.sa-prose__p--formula {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  color: var(--sa-ink);
+  background: var(--sa-surface);
+  border: 1px solid var(--sa-rule);
+  border-radius: 0.3rem;
+  padding: 0.7rem 0.9rem;
+}
+
+/* Narrow panels: tighter card, and long identifiers wrap instead of overflowing. */
+.sa-prose, .sa-steps__body, .sa-steps__title { overflow-wrap: anywhere; }
+@container (max-width: 26rem) {
+  .sa-prose--method, .sa-prose--plain { padding: 1rem 1rem 1.1rem; }
+  .sa-prose--method .sa-prose__p--lead { font-size: 1.02rem; }
+}
+
+/* Steps */
+.sa-prose--steps { font-family: var(--sa-sans); max-width: 46rem; }
+.sa-prose--steps > .sa-prose__p { margin-bottom: 1rem; line-height: 1.6; }
+.sa-steps { list-style: none; margin: 0; padding: 0; counter-reset: sa-step; }
+.sa-steps__item {
+  counter-increment: sa-step;
+  position: relative;
+  padding: 0.1rem 0 1.15rem 3rem;
+  line-height: 1.55;
+  font-size: 0.93rem;
+}
+.sa-steps__item:last-child { padding-bottom: 0.1rem; }
+.sa-steps__item::before {
+  content: counter(sa-step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.9rem;
+  height: 1.9rem;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--sa-surface);
+  border: 2px solid var(--sa-accent);
+  color: var(--sa-accent-ink);
+  font-size: 0.8rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  z-index: 1;
+}
+.sa-steps__item::after {
+  content: "";
+  position: absolute;
+  left: calc(0.95rem - 1px);
+  top: 2.1rem;
+  bottom: 0.2rem;
+  width: 2px;
+  background: var(--sa-rule);
+}
+.sa-steps__item:last-child::after { display: none; }
+.sa-steps__title { display: block; font-weight: 650; color: var(--sa-ink); font-size: 0.98rem; line-height: 1.9rem; margin-top: -0.1rem; }
+.sa-steps__body { display: block; color: var(--sa-body); max-width: 62ch; }
+.sa-steps__item--bare .sa-steps__body { color: var(--sa-ink); padding-top: 0.2rem; }
+.sa-prose--steps .sa-prose__note {
+  margin-top: 1.2rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--sa-rule);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--sa-muted);
+}

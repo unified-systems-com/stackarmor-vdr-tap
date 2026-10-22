@@ -52,6 +52,7 @@ Three states. A value the plugin cannot know is reported as assumed, never as th
 | req-stackarmor-vdr-search | [The PAIN Search](#the-pain-search) | Implemented | The `stackarmor-pain` and `stackarmor-assets` `module` Search runners, which read the stamps, reduce them with the base and score. |
 | req-stackarmor-vdr-summary | [Summary Counts](#summary-counts) | Implemented | The `stackarmor-summary` `module` Search runner: counts of the `stackarmor-pain` rows by PAIN level and by what was assumed, for charts and cards. |
 | req-stackarmor-vdr-trace | [Trace](#trace) | Implemented | The `stackarmor-trace` `module` Search runner: the objects behind one finding's score (finding, vulnerability, component, owner, programs, stamps, archetypes) as a graph, for a graph panel. |
+| req-stackarmor-vdr-panel-prose | [The Prose Panel](#the-prose-panel) | Implemented | The `stackarmor_prose` panel type: styled prose from config text, as plain paragraphs, a magazine-style method or a numbered stepper, themed from the palette tokens, text always escaped. |
 | req-stackarmor-vdr-nongoals | [v0 Non-Goals](#v0-non-goals) | Implemented | What this version does not build. |
 | req-stackarmor-vdr-ceiling | [Intended-Use Ceiling](#v0-non-goals) | Backlog | The Security Requirements ceiling per agency scope; until it exists the result is the uncapped, conservative compatibility mode and says so. |
 | req-stackarmor-vdr-mitigation | [Mitigation Ladder](#v0-non-goals) | Backlog | Evidence-gated Modified C/I/A (High to Low, never None), the residual-response PAIN proxy and the retained consequence PAIN. |
@@ -302,6 +303,39 @@ Inputs: `entity_id` (required, a finding) and `scheme` (default `stackarmor`). I
 | req-stackarmor-vdr-trace-4 | Bad Input Refused | Implemented | A missing or non-string `entity_id` and an unknown input are refused with a `ValueError` naming the input. | |
 | req-stackarmor-vdr-trace-5 | Registered, Read Only | Implemented | The runner is registered as `tap_plugin.stackarmor_vdr.searches.pain:stackarmor-trace` and writes nothing. | |
 
+### The Prose Panel
+----
+RID: `req-stackarmor-vdr-panel-prose`
+
+Status: `Implemented`
+
+A page that explains the method wants the explanation set as prose, not as a pre-wrapped block of text. `stackarmor_prose` is a panel type that takes only config: it runs no Search and reads no node, so a page can mount it with nothing but text.
+
+#### Implementation
+
+`tap_plugin/stackarmor_vdr/panels/prose.py` defines `StackarmorProsePanelType` (slug `stackarmor_prose`, view `stackarmor_vdr/panels/prose.html`, css `stackarmor_vdr/css/prose.css`), registered in `apps.py` `ready()` on `tap_web.registry.panel_type_registry`; the manifest has no panel field in v0 (`req-tap-plugin-manifest-v0-nongoals-2`). The module imports no Django: the text is parsed into plain strings and the template renders them with autoescaping, so no markup in the text is ever run. An instance is a `panel` node whose `view` is `stackarmor_vdr/panels/prose.html` and whose `config` is `{"text": ..., "variant": ..., "hide_header": ...}` (`PROSE_PANEL_CONFIG_SCHEMA`: every property described, unknown keys refused, `text` required).
+
+| Variant | Text is read as | Set as |
+| --- | --- | --- |
+| `plain` (default) | Blank-line-separated blocks, each a paragraph that keeps its lines. | Sans paragraphs on a tinted card. |
+| `method` | Blocks as above; the first is the lead. A line `Label: text` (label at most 40 characters) has the label run in as a small head; an unlabelled line holding ` = ` is a formula, and a block of formulas is set in a monospace inset. | A serif, magazine-style card with a lead, a line length of at most 46rem and one accent rule. |
+| `steps` | Lines `1. Title: description`, `2) Title: description` or `- Title: description` are the steps (the numbering is counted, not read); text before the first step is an intro and text after the last is a note. With no such line every blank-line-separated block is a step. A step with no `Title:` shows its description alone. | A numbered vertical stepper: badges on a connecting line, a title line and a description. |
+
+Every colour is a theme token (`rgb(var(--tap-...))` from `tap_web/static/tap_web/css/theme.css`), which the theme redefines for dark, so the stylesheet has no literal colour and needs no dark block (`req-web-theme-scope`). The wording is the config's: the panel never edits, reorders or drops text; whitespace, a step's leading number or dash and the colon after a step's title are the only characters it does not show.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-stackarmor-vdr-panel-prose-1 | Registered With A Described Config | Implemented | The panel type is registered under `stackarmor_prose` in `apps.py`, and its config schema describes every property, requires `text` and refuses unknown keys. | |
+| req-stackarmor-vdr-panel-prose-2 | Variants Are An Allowlist | Implemented | `variant` accepts `plain`, `method` and `steps`; any other value is refused, and a config with no `variant` renders as `plain`. | |
+| req-stackarmor-vdr-panel-prose-3 | Text Is Escaped | Implemented | `<script>` and other markup in the text renders as text in every variant, and the template uses no `safe` filter or `autoescape off`. | |
+| req-stackarmor-vdr-panel-prose-4 | The Steps Are Parsed | Implemented | Numbered and dash lines become ordered steps with a title where one is given, a step without a title keeps its whole text, an intro and a note are kept apart from the steps, and a text with no step lines becomes one step per block. | |
+| req-stackarmor-vdr-panel-prose-5 | The Method Is Parsed | Implemented | The first block is the lead, a labelled line gives its label and text, and a block of unlabelled ` = ` lines is a formula. | |
+| req-stackarmor-vdr-panel-prose-6 | Every Word Survives | Implemented | The words of the text, in order, are the words rendered in every variant, with only a step's leading number or dash and the colon after its title left out. | |
+| req-stackarmor-vdr-panel-prose-7 | Theme Tokens Only | Implemented | The stylesheet holds no hex or rgb literal and reads every colour from `--tap-*` tokens. | Both themes were checked by screenshot on 2026-10-22. |
+| req-stackarmor-vdr-panel-prose-8 | Bad Config Is Shown, Not Raised | Implemented | An invalid config renders a visible message and raises nothing, so one bad panel does not take the page down. | |
+
 ### v0 Non-Goals
 ----
 RID: `req-stackarmor-vdr-nongoals`
@@ -313,7 +347,7 @@ This version does not:
 - store PAIN, an owner or a profile (`req-stackarmor-vdr-search-5`);
 - decide which asset a finding belongs to, or compute reachability: both are the base's;
 - implement the memo's intended-use ceiling, mitigation ladder, per-asset agency flag or per-library profile (the Backlog rows), or the memo's cross-system aggregation of CVSS v4.0 subsequent-system impact, which the memo itself does not specify;
-- ship pages or panels: the Searches are the surface other pages read;
+- ship pages, or any panel that reads the grid: the Searches are the surface other pages read (its one panel type, `stackarmor_prose`, takes only config, `req-stackarmor-vdr-panel-prose`);
 - ship any model or edge beyond the stamp, the archetype and their two edges.
 
 The model catalog and edge list above are unchanged by v0.2.0; the stamp gains one field (`multi_agency`).
