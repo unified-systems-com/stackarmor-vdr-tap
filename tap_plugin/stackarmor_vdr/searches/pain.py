@@ -197,6 +197,18 @@ def _vulnerabilities(vuln_ids: list[str], *, db_alias: str) -> dict[str, Any]:
     }
 
 
+def _entity_types(ids: set[str], *, db_alias: str) -> dict[str, str]:
+    """`{entity id: entity type}` for the live entities among `ids`, so a page can link a row to the right viewer."""
+    if not ids:
+        return {}
+    return {
+        str(pk): kind
+        for pk, kind in read_scope.node_relation(read_scope.DEFAULT_SCOPE, None, db_alias=db_alias)
+        .filter(pk__in=sorted(ids))
+        .values_list("pk", "entity_type")
+    }
+
+
 def pain_rows(p: dict[str, Any], *, db_alias: str) -> list[dict[str, Any]]:
     """Every scored row for already-defaulted inputs `p`; the one computation both Search runners share."""
     reach = reach_rows({"entity_id": p["entity_id"]} if p.get("entity_id") else {}, db_alias=db_alias)
@@ -204,6 +216,9 @@ def pain_rows(p: dict[str, Any], *, db_alias: str) -> list[dict[str, Any]]:
     resolved = resolve_programs(program_ids, p["scheme"], db_alias=db_alias)
     vulns = _vulnerabilities([row["vuln_id"] for row in reach], db_alias=db_alias)
     backed = backed_factors([row["finding_id"] for row in reach], scheme=p["evaluation_scheme"], db_alias=db_alias)
+    types = _entity_types(
+        {x for r in reach for x in (r["owner_id"], r["component_id"], r["container_id"]) if x}, db_alias=db_alias
+    )
     rows: list[dict[str, Any]] = []
     for r in reach:
         if r["owner_kind"] == "program":
@@ -244,7 +259,11 @@ def pain_rows(p: dict[str, Any], *, db_alias: str) -> list[dict[str, Any]]:
             {
                 "finding_id": r["finding_id"],
                 "vuln_id": r["vuln_id"],
+                "cve": getattr(vuln, "vuln_id", None),
                 "component": r["component"],
+                "component_type": types.get(r["component_id"]),
+                "owner_type": types.get(r["owner_id"]),
+                "container_type": types.get(r["container_id"]) if r["container_id"] else None,
                 "component_id": r["component_id"],
                 "container_id": r["container_id"],
                 "container": r["container"],
