@@ -26,6 +26,7 @@ from tap_plugin.fedramp_20x_vdr.evaluations import backed_factors
 from tap_plugin.fedramp_20x_vdr.levels import exposure_column, reduce_profiles
 from tap_plugin.fedramp_20x_vdr.searches.reach import reach_rows
 
+from tap_grid.grift.subgraph import serialize_edge_full, serialize_edge_lite, serialize_node_full, serialize_node_lite
 from tap_grid.gryphon import read_scope
 from tap_grid.models import Search
 
@@ -108,8 +109,8 @@ def _fmt(value: Decimal) -> str:
 
 def _stamp_triples(
     program_ids: list[str], scheme: str, *, db_alias: str
-) -> dict[str, list[tuple[tuple[str | None, ...], tuple[str, ...]]]]:
-    """For each program, one `(levels, origins)` per stamp of the scheme.
+) -> dict[str, list[tuple[tuple[str | None, ...], tuple[str, ...], int | None]]]:
+    """For each program, one `(levels, origins, multi_agency)` per stamp of the scheme.
 
     ``levels`` is the stamp's value per objective (an explicit value, else the highest value of the archetypes it names,
     else None), and ``origins`` is `explicit`, `archetype` or `none` for each.
@@ -393,4 +394,81 @@ def _envelope(everything: list[dict[str, Any]], limit: int) -> dict[str, Any]:
         "rows": rows,
         "info": {"row_count": len(rows), "total_rows": len(everything)},
         "warnings": warnings,
+    }
+
+
+RUNS_PACKAGE_EDGE = "RUNS_PACKAGE__computing_core"
+TRACE_INPUT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "entity_id": {"type": "string", "description": "The finding whose objects are shown (required)."},
+        "scheme": {"type": "string", "minLength": 1, "default": "stackarmor", "description": "Stamp scheme to read."},
+    },
+}
+
+
+def stackarmor_trace(search: Search, inputs: dict[str, Any], *, db_alias: str, layer: str = "full") -> dict[str, Any]:
+    """The objects behind one finding's score, as a graph: the finding, its vulnerability, the component, the owner and
+    container, the programs involved, their stamps and the archetypes the stamps name, with the edges among them.
+
+    Returns `nodes` and `edges` (no rows). The component's route to the program is shown only as far as the grid's own edges
+    between these objects go (the program's `RUNS_PACKAGE` roots are included); a longer dependency route is not drawn.
+
+    req-stackarmor-vdr-trace
+    """
+    unknown = sorted(set(inputs) - set(TRACE_INPUT_SCHEMA["properties"]))
+    if unknown:
+        raise ValueError(f"unknown input {', '.join(unknown)}")
+    finding = inputs.get("entity_id")
+    if not isinstance(finding, str) or not finding:
+        raise ValueError("entity_id must be the id of a finding")
+    scheme = inputs.get("scheme", TRACE_INPUT_SCHEMA["properties"]["scheme"]["default"])
+    scope = read_scope.DEFAULT_SCOPE
+    reach = reach_rows({"entity_id": finding}, db_alias=db_alias)
+    ids: set[str] = {finding}
+    programs: set[str] = set()
+    for r in reach:
+        ids.update(x for x in (r["vuln_id"], r["component_id"], r["owner_id"], r["container_id"]) if x)
+        programs.update(prog["id"] for prog in r["programs"])
+    ids.update(programs)
+    edges_rel = read_scope.edge_relation(scope, db_alias=db_alias)
+    ids.update(
+        str(t)
+        for t in edges_rel.filter(edge_type=RUNS_PACKAGE_EDGE, from_entity_id__in=sorted(programs)).values_list(
+            "to_entity_id", flat=True
+        )
+    )
+    stamp_ids = {
+        str(f)
+        for f in edges_rel.filter(edge_type=PROFILES_EDGE, to_entity_id__in=sorted(programs)).values_list(
+            "from_entity_id", flat=True
+        )
+    }
+    stamps = {
+        str(row.entity_id)
+        for row in read_scope.node_relation(scope, AssetProfile, db_alias=db_alias).filter(
+            entity_id__in=sorted(stamp_ids), scheme=scheme
+        )
+    }
+    ids.update(stamps)
+    ids.update(
+        str(a)
+        for a in edges_rel.filter(edge_type=ARCHETYPE_EDGE, from_entity_id__in=sorted(stamps)).values_list(
+            "to_entity_id", flat=True
+        )
+    )
+    entities = list(read_scope.node_relation(scope, None, db_alias=db_alias).filter(pk__in=sorted(ids)))
+    live = {str(e.pk) for e in entities}
+    edge_rows = list(edges_rel.filter(from_entity_id__in=sorted(live), to_entity_id__in=sorted(live)))
+    nodes = [serialize_node_lite(e) if layer == "lite" else serialize_node_full(e) for e in entities]
+    edges = [serialize_edge_lite(e) if layer == "lite" else serialize_edge_full(e) for e in edge_rows]
+    return {
+        "nodes": nodes,
+        "edges": edges,
+        "rows": [],
+        "info": {"node_count": len(nodes), "edge_count": len(edges)},
+        "warnings": {}
+        if reach
+        else {"no_owner": ["the grid ties this finding to no owner, so only the finding is shown"]},
     }

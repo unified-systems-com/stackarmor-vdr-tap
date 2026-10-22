@@ -51,6 +51,7 @@ Three states. A value the plugin cannot know is reported as assumed, never as th
 | req-stackarmor-vdr-archetypes | [Archetype Catalog](#archetype-catalog) | Implemented | The `archetype` node, one per archetype carrying its CR, IR and AR, the sixteen memo entries seeded as data, and the `USES_ARCHETYPE` edge a stamp uses to name one. |
 | req-stackarmor-vdr-search | [The PAIN Search](#the-pain-search) | Implemented | The `stackarmor-pain` and `stackarmor-assets` `module` Search runners, which read the stamps, reduce them with the base and score. |
 | req-stackarmor-vdr-summary | [Summary Counts](#summary-counts) | Implemented | The `stackarmor-summary` `module` Search runner: counts of the `stackarmor-pain` rows by PAIN level and by what was assumed, for charts and cards. |
+| req-stackarmor-vdr-trace | [Trace](#trace) | Implemented | The `stackarmor-trace` `module` Search runner: the objects behind one finding's score (finding, vulnerability, component, owner, programs, stamps, archetypes) as a graph, for a graph panel. |
 | req-stackarmor-vdr-nongoals | [v0 Non-Goals](#v0-non-goals) | Implemented | What this version does not build. |
 | req-stackarmor-vdr-ceiling | [Intended-Use Ceiling](#v0-non-goals) | Backlog | The Security Requirements ceiling per agency scope; until it exists the result is the uncapped, conservative compatibility mode and says so. |
 | req-stackarmor-vdr-mitigation | [Mitigation Ladder](#v0-non-goals) | Backlog | Evidence-gated Modified C/I/A (High to Low, never None), the residual-response PAIN proxy and the retained consequence PAIN. |
@@ -278,6 +279,28 @@ Inputs: those of `stackarmor-pain` except `entity_id`, `vuln_id` and `max_result
 | req-stackarmor-vdr-summary-2 | Assumptions Are Counted | Implemented | The `assumptions` row counts rows by `profile_source`, rows whose `impact_source` is `assumed`, and rows whose `multi_agency_source` is `assumed` and `stamp`, from the same rows. | |
 | req-stackarmor-vdr-summary-3 | Registered | Implemented | The runner is registered as `tap_plugin.stackarmor_vdr.searches.pain:stackarmor-summary` and writes nothing. | |
 | req-stackarmor-vdr-summary-4 | Bad Input Refused | Implemented | An unknown input or a `view` other than the two is refused with a `ValueError` naming it. | |
+
+### Trace
+----
+RID: `req-stackarmor-vdr-trace`
+
+Status: `Implemented`
+
+A page that explains the method wants to show the objects the score was computed from, not only the numbers. `stackarmor-trace` returns them as a graph envelope (`nodes` and `edges`, no rows) so a graph panel can draw it.
+
+#### Implementation
+
+Inputs: `entity_id` (required, a finding) and `scheme` (default `stackarmor`). It uses the base's reach to name the owner, the container and the programs, then returns those nodes, the finding's vulnerability and component, each program's `RUNS_PACKAGE` roots, the stamps of the scheme that point at the programs and the archetypes they name, with every live edge among them. It stores nothing. A component's route to a program is drawn only as far as the grid's own edges between these objects go.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-stackarmor-vdr-trace-1 | The Objects Behind The Score | Implemented | The result holds the finding, its vulnerability, the component, the owner and container, the programs, their stamps and the archetypes the stamps name, and the edges among them. | |
+| req-stackarmor-vdr-trace-2 | One Scheme | Implemented | Only stamps of the input `scheme` are shown. | |
+| req-stackarmor-vdr-trace-3 | No Owner Is Said | Implemented | A finding the grid ties to no owner returns the finding alone and a `no_owner` warning. | |
+| req-stackarmor-vdr-trace-4 | Bad Input Refused | Implemented | A missing or non-string `entity_id` and an unknown input are refused with a `ValueError` naming the input. | |
+| req-stackarmor-vdr-trace-5 | Registered, Read Only | Implemented | The runner is registered as `tap_plugin.stackarmor_vdr.searches.pain:stackarmor-trace` and writes nothing. | |
 
 ### v0 Non-Goals
 ----

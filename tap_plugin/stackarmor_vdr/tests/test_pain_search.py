@@ -323,6 +323,66 @@ class TestSummary:
             pain.stackarmor_summary(None, bad, db_alias="default")  # type: ignore[arg-type]
 
 
+class TestTrace:
+    @pytest.mark.spec("req-stackarmor-vdr-trace-1")
+    def test_it_returns_the_objects_behind_a_finding_and_the_edges_among_them(self) -> None:
+        estate = Estate()
+        stamp = estate.stamp(archetype="app_tier")
+        out = pain.stackarmor_trace(None, {"entity_id": str(estate.finding.pk)}, db_alias="default")  # type: ignore[arg-type]
+        types = {n["entity_type"] for n in out["nodes"]}
+        assert {
+            "compliance_core__compliance_finding",
+            "compliance_core__compliance_vulnerability",
+            "computing_core__package",
+            "computing_core__program",
+            "computing_core__host",
+            "stackarmor_vdr__asset_profile",
+            "stackarmor_vdr__archetype",
+        } <= types
+        edge_types = {e["data"]["edge_type"] for e in out["edges"]}
+        assert {
+            "CONCERNS_COMPLIANCE_VULNERABILITY__compliance_core",
+            "CARRIES_COMPLIANCE_FINDING__compliance_core",
+            "RUNS_PROGRAM__computing_core",
+            "PROFILES_PROGRAM__stackarmor_vdr",
+            "USES_ARCHETYPE__stackarmor_vdr",
+        } <= edge_types
+        assert str(stamp.pk) in {n["entity_id"] for n in out["nodes"]}
+        ends = {n["entity_id"] for n in out["nodes"]}
+        assert all(e["data"]["from_entity_id"] in ends and e["data"]["to_entity_id"] in ends for e in out["edges"])
+
+    @pytest.mark.spec("req-stackarmor-vdr-trace-2")
+    def test_only_stamps_of_the_scheme_are_shown(self) -> None:
+        estate = Estate()
+        estate.stamp("a", scheme="other", archetype="dev_test")
+        out = pain.stackarmor_trace(None, {"entity_id": str(estate.finding.pk)}, db_alias="default")  # type: ignore[arg-type]
+        assert "stackarmor_vdr__asset_profile" not in {n["entity_type"] for n in out["nodes"]}
+
+    @pytest.mark.spec("req-stackarmor-vdr-trace-3")
+    def test_a_finding_with_no_owner_shows_itself_and_says_so(self) -> None:
+        lone = _node(FINDING, {"source": "t", "source_key": "lone", "name": "lone", "status": "open"})
+        out = pain.stackarmor_trace(None, {"entity_id": str(lone.pk)}, db_alias="default")  # type: ignore[arg-type]
+        assert [n["entity_id"] for n in out["nodes"]] == [str(lone.pk)] and out["edges"] == []
+        assert "no_owner" in out["warnings"]
+
+    @pytest.mark.spec("req-stackarmor-vdr-trace-4")
+    @pytest.mark.parametrize("bad", [{}, {"entity_id": ""}, {"entity_id": 5}, {"entity_id": "x", "bogus": 1}])
+    def test_bad_input_is_refused(self, bad: dict[str, Any]) -> None:
+        with pytest.raises(ValueError):  # noqa: PT011
+            pain.stackarmor_trace(None, bad, db_alias="default")  # type: ignore[arg-type]
+
+    @pytest.mark.spec("req-stackarmor-vdr-trace-5")
+    def test_it_is_registered_and_writes_nothing(self) -> None:
+        from tap_grid.registry import get_search_runner
+
+        assert get_search_runner("tap_plugin.stackarmor_vdr.searches.pain:stackarmor-trace") is pain.stackarmor_trace
+        estate = Estate()
+        estate.stamp(archetype="app_tier")
+        before = Entity.objects.count()
+        pain.stackarmor_trace(None, {"entity_id": str(estate.finding.pk)}, db_alias="default")  # type: ignore[arg-type]
+        assert Entity.objects.count() == before
+
+
 class TestContainer:
     @pytest.mark.spec("req-stackarmor-vdr-search-1")
     def test_a_container_owned_row_reduces_the_programs_involved(self) -> None:
