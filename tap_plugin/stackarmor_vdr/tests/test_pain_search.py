@@ -127,6 +127,7 @@ class TestRow:
         assert (row["c"], row["i"], row["a"]) == ("high", "high", "high")
         assert levels(row) == ("medium", "medium", "medium")
         assert (row["u"], row["word"], row["pain"]) == ("0.914816", "Disruptive", "N4")
+        assert row["pain_rank"] == 4
         assert row["profile_source"] == "archetype" and row["scheme"] == "stackarmor"
 
     @pytest.mark.spec("req-stackarmor-vdr-search-1")
