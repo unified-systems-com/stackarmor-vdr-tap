@@ -214,6 +214,115 @@ class TestProfiles:
         assert (levels(row), row["profile_source"]) == (("high", "high", "high"), "unclassified")
 
 
+class TestAgencyFlag:
+    @pytest.mark.spec("req-stackarmor-vdr-stamp-9")
+    def test_a_stamp_states_the_flag_and_the_row_says_where_it_came_from(self) -> None:
+        Estate().stamp(archetype="app_tier", multi_agency=0)
+        row = one()
+        assert (row["m"], row["multi_agency_source"], row["pain"]) == (0, "stamp", "N3")  # the same score at m=1 is N4
+
+    @pytest.mark.spec("req-stackarmor-vdr-stamp-9")
+    def test_a_program_that_states_nothing_uses_the_input_default_and_says_assumed(self) -> None:
+        Estate().stamp(archetype="app_tier")
+        assert (one()["m"], one()["multi_agency_source"]) == (1, "assumed")
+        assert (one(multi_agency=0)["m"], one(multi_agency=0)["multi_agency_source"]) == (0, "assumed")
+
+    @pytest.mark.spec("req-stackarmor-vdr-stamp-9")
+    def test_several_stamps_never_lower_the_flag(self) -> None:
+        estate = Estate()
+        estate.stamp("a", archetype="app_tier", multi_agency=0)
+        estate.stamp("b", archetype="app_tier", multi_agency=1)
+        assert one()["m"] == 1
+
+    @pytest.mark.spec("req-stackarmor-vdr-stamp-9")
+    def test_a_container_row_takes_the_highest_flag_of_its_programs_counting_silence_at_the_default(self) -> None:
+        estate = Estate()
+        estate.stamp(archetype="dev_test", multi_agency=0)
+        orphan = _node(C + "package", {"ecosystem": "apk", "name": "musl", "version": "1"})
+        _edge(estate.image, "INSTALLS_PACKAGE", orphan)
+        finding = estate.finding_on(orphan, "f2")
+        row = next(r for r in run() if r["finding_id"] == str(finding.pk))
+        assert (row["owner_kind"], row["m"], row["multi_agency_source"]) == ("container", 0, "stamp")
+        second = _node(C + "program", {"program_name": "sidecar"})
+        _edge(estate.container, "RUNS_PROGRAM", second)  # a second program that states nothing
+        row = next(r for r in run() if r["finding_id"] == str(finding.pk))
+        assert (row["m"], row["multi_agency_source"]) == (1, "assumed")
+
+    @pytest.mark.spec("req-stackarmor-vdr-score-2")
+    @pytest.mark.parametrize(
+        ("levels", "flag", "u", "pain"),
+        [
+            ({"cr": "low", "ir": "low", "ar": "low"}, 0, "0.626752", "N3"),  # the memo's example 3 on this system
+            ({"cr": "medium", "ir": "medium", "ar": "medium"}, 1, "0.914816", "N4"),  # example 2
+            ({"cr": "high", "ir": "high", "ar": "high"}, 1, "0.995904", "N5"),  # example 1
+        ],
+    )
+    def test_stamps_reproduce_the_memos_worked_examples_end_to_end(
+        self, levels: dict[str, str], flag: int, u: str, pain: str
+    ) -> None:
+        Estate().stamp(multi_agency=flag, **levels)
+        row = one()
+        assert (row["u"], row["pain"], row["profile_source"]) == (u, pain, "override")
+
+
+class TestVulnerabilityFilter:
+    @pytest.mark.spec("req-stackarmor-vdr-search-11")
+    def test_vuln_id_limits_the_rows_to_one_vulnerability(self) -> None:
+        estate = Estate()
+        estate.stamp(archetype="app_tier")
+        other = _node(VULN, {"vuln_id": "CVE-2026-2", "title": "t2", "cvss_vector": HHH, "cvss_version": "3.1"})
+        finding = _node(FINDING, {"source": "t", "source_key": "f9", "name": "f9", "status": "open"})
+        create_edge(finding, other, "CONCERNS_COMPLIANCE_VULNERABILITY__compliance_core")
+        create_edge(estate.dep, finding, "CARRIES_COMPLIANCE_FINDING__compliance_core")
+        assert len(run()) == 2
+        assert [r["vuln_id"] for r in run(vuln_id=str(other.pk))] == [str(other.pk)]
+
+
+class TestSummary:
+    @pytest.mark.spec("req-stackarmor-vdr-summary-1")
+    def test_by_pain_lists_every_level_and_the_counts_match_the_rows(self) -> None:
+        Estate().stamp(archetype="app_tier")
+        out = pain.stackarmor_summary(None, {"view": "by_pain"}, db_alias="default")["rows"]  # type: ignore[arg-type]
+        assert [r["pain"] for r in out] == ["N1", "N2", "N3", "N4", "N5"]
+        assert sum(r["rows"] for r in out) == len(run()) == 1
+        assert {r["pain"]: r["rows"] for r in out}["N4"] == 1
+
+    @pytest.mark.spec("req-stackarmor-vdr-summary-1")
+    def test_with_no_rows_every_level_is_zero_and_the_percent_is_null(self) -> None:
+        out = pain.stackarmor_summary(None, {}, db_alias="default")["rows"]  # type: ignore[arg-type]
+        assert [(r["rows"], r["percent"]) for r in out] == [(0, None)] * 5
+
+    @pytest.mark.spec("req-stackarmor-vdr-summary-2")
+    def test_assumptions_are_counted_from_the_same_rows(self) -> None:
+        Estate(vector=None)  # no stamp, no vector
+        (row,) = pain.stackarmor_summary(None, {"view": "assumptions"}, db_alias="default")["rows"]  # type: ignore[arg-type]
+        assert (
+            row["rows"],
+            row["unclassified"],
+            row["assumed_impact"],
+            row["assumed_agency"],
+            row["stamped_agency"],
+        ) == (1, 1, 1, 1, 0)
+
+    @pytest.mark.spec("req-stackarmor-vdr-summary-3")
+    def test_it_is_registered_and_writes_nothing(self) -> None:
+        from tap_grid.registry import get_search_runner
+
+        assert (
+            get_search_runner("tap_plugin.stackarmor_vdr.searches.pain:stackarmor-summary") is pain.stackarmor_summary
+        )
+        Estate().stamp(archetype="app_tier")
+        before = Entity.objects.count()
+        pain.stackarmor_summary(None, {}, db_alias="default")  # type: ignore[arg-type]
+        assert Entity.objects.count() == before
+
+    @pytest.mark.spec("req-stackarmor-vdr-summary-4")
+    @pytest.mark.parametrize("bad", [{"view": "nope"}, {"bogus": 1}, {"entity_id": "x"}])
+    def test_bad_input_is_refused(self, bad: dict[str, Any]) -> None:
+        with pytest.raises(ValueError):  # noqa: PT011
+            pain.stackarmor_summary(None, bad, db_alias="default")  # type: ignore[arg-type]
+
+
 class TestContainer:
     @pytest.mark.spec("req-stackarmor-vdr-search-1")
     def test_a_container_owned_row_reduces_the_programs_involved(self) -> None:

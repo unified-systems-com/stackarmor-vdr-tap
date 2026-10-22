@@ -7,6 +7,7 @@ from django.db import models
 from tap_grid.models import BaseModel
 
 _LEVEL: dict[str, Any] = {"type": ["string", "null"], "enum": ["low", "medium", "high", None]}
+_AGENCY: dict[str, Any] = {"type": ["integer", "null"], "enum": [0, 1, None]}
 
 
 class AssetProfile(BaseModel):
@@ -48,6 +49,7 @@ class AssetProfile(BaseModel):
         "cr": _LEVEL,
         "ir": _LEVEL,
         "ar": _LEVEL,
+        "multi_agency": _AGENCY,
         "rationale": {"type": "string", "minLength": 1},
     }
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -92,6 +94,15 @@ class AssetProfile(BaseModel):
         blank=True,
         default=None,
         help_text="Explicit availability requirement. Null = none stated.",
+    )
+    multi_agency = models.SmallIntegerField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text=(
+            "The affected-agency flag m for this program: 1 when more than one agency is affected, 0 for one. "
+            "Null = says nothing."
+        ),
     )
     rationale = models.TextField(
         blank=True, default="", help_text="Why this profile; the memo asks for it to be retained."

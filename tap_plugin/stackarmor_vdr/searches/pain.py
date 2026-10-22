@@ -16,7 +16,7 @@ the `archetype` nodes.
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from decimal import Decimal
 from typing import Any
 
@@ -84,6 +84,7 @@ INPUT_SCHEMA: dict[str, Any] = {
             "type": "string",
             "description": "One finding (stackarmor-pain) or one node (stackarmor-assets).",
         },
+        "vuln_id": {"type": "string", "description": "Only the rows of one vulnerability (stackarmor-pain)."},
         "max_results": {"type": "integer", "minimum": 1, "maximum": MAX_RESULTS, "default": DEFAULT_MAX_RESULTS},
     },
 }
@@ -138,7 +139,7 @@ def _stamp_triples(
             entity_id__in=sorted({a for ids in names.values() for a in ids})
         )
     }
-    out: dict[str, list[tuple[tuple[str | None, ...], tuple[str, ...]]]] = defaultdict(list)
+    out: dict[str, list[tuple[tuple[str | None, ...], tuple[str, ...], int | None]]] = defaultdict(list)
     for stamp, program in pairs:
         row = stamps.get(str(stamp))
         if row is None:
@@ -157,27 +158,32 @@ def _stamp_triples(
             else:
                 levels.append(None)
                 origins.append("none")
-        out[str(program)].append((tuple(levels), tuple(origins)))
+        out[str(program)].append((tuple(levels), tuple(origins), row.multi_agency))
     return out
 
 
 def resolve_programs(
     program_ids: list[str], scheme: str, *, db_alias: str
-) -> dict[str, tuple[tuple[str, str, str], str, bool]]:
-    """`{program: ((cr, ir, ar), profile_source, stamped)}`; an unstamped program is High and `unclassified`."""
+) -> dict[str, tuple[tuple[str, str, str], str, bool, int | None]]:
+    """`{program: ((cr, ir, ar), profile_source, stamped, multi_agency)}`.
+
+    An unstamped program is High and `unclassified`. `multi_agency` is the highest value any of the program's stamps states
+    (1 beats 0), or None when no stamp states one.
+    """
     stamps = _stamp_triples(sorted(set(program_ids)), scheme, db_alias=db_alias)
-    out: dict[str, tuple[tuple[str, str, str], str, bool]] = {}
+    out: dict[str, tuple[tuple[str, str, str], str, bool, int | None]] = {}
     for program in set(program_ids):
         found = stamps.get(program, [])
-        profile = reduce_profiles([levels for levels, _ in found])
-        origins = {origin for _, got in found for origin in got}
+        profile = reduce_profiles([levels for levels, _, _ in found])
+        origins = {origin for _, got, _ in found for origin in got}
         if not found or "none" in origins:
             source = "unclassified"
         elif "archetype" in origins:
             source = "archetype"
         else:
             source = "override"
-        out[program] = (profile, source, bool(found))
+        stated = [m for _, _, m in found if m is not None]
+        out[program] = (profile, source, bool(found), max(stated) if stated else None)
     return out
 
 
@@ -190,12 +196,8 @@ def _vulnerabilities(vuln_ids: list[str], *, db_alias: str) -> dict[str, Any]:
     }
 
 
-def stackarmor_pain(search: Search, inputs: dict[str, Any], *, db_alias: str, layer: str = "full") -> dict[str, Any]:
-    """One row per open finding per owner per container, each with the score and every input behind it.
-
-    req-stackarmor-vdr-search-1
-    """
-    p = _with_defaults(inputs)
+def pain_rows(p: dict[str, Any], *, db_alias: str) -> list[dict[str, Any]]:
+    """Every scored row for already-defaulted inputs `p`; the one computation both Search runners share."""
     reach = reach_rows({"entity_id": p["entity_id"]} if p.get("entity_id") else {}, db_alias=db_alias)
     program_ids = [prog["id"] for row in reach for prog in row["programs"]]
     resolved = resolve_programs(program_ids, p["scheme"], db_alias=db_alias)
@@ -204,17 +206,22 @@ def stackarmor_pain(search: Search, inputs: dict[str, Any], *, db_alias: str, la
     rows: list[dict[str, Any]] = []
     for r in reach:
         if r["owner_kind"] == "program":
-            cr_ir_ar, profile_source, _ = resolved[r["owner_id"]]
+            cr_ir_ar, profile_source, _, stated = resolved[r["owner_id"]]
+            stated_all = [stated]
         else:
             # A container (or an owner the grid could not name) is the reduction of the programs involved.
             cr_ir_ar = reduce_profiles([resolved[prog["id"]][0] for prog in r["programs"]])
             profile_source = "container"
+            stated_all = [resolved[prog["id"]][3] for prog in r["programs"]] or [None]
+        # The flag: what the stamps say, the higher value winning; a program that says nothing counts as the input default.
+        multi_agency = max(p["multi_agency"] if m is None else m for m in stated_all)
+        multi_agency_source = "stamp" if all(m is not None for m in stated_all) else "assumed"
         vuln = vulns.get(r["vuln_id"])
         impact = parse_impact(getattr(vuln, "cvss_vector", None), getattr(vuln, "cvss_version", None))
         result = score(
             impact.vector,
             cr_ir_ar,
-            p["multi_agency"],
+            multi_agency,
             impact_weights=p["impact_weights"],
             requirement_weights=p["requirement_weights"],
             u1=p["u1"],
@@ -256,8 +263,8 @@ def stackarmor_pain(search: Search, inputs: dict[str, Any], *, db_alias: str, la
                 "u": _fmt(result.u),
                 "s": _fmt(result.s),
                 "word": result.word,
-                "m": p["multi_agency"],
-                "multi_agency_source": "assumed",
+                "m": multi_agency,
+                "multi_agency_source": multi_agency_source,
                 "pain": result.pain,
                 "lev": lev,
                 "irv": irv,
@@ -266,7 +273,72 @@ def stackarmor_pain(search: Search, inputs: dict[str, Any], *, db_alias: str, la
                 "deadline_hours": deadline_hours(p["fedramp_class"], result.pain, column, db_alias=db_alias),
             }
         )
+    return rows
+
+
+def stackarmor_pain(search: Search, inputs: dict[str, Any], *, db_alias: str, layer: str = "full") -> dict[str, Any]:
+    """One row per open finding per owner per container, each with the score and every input behind it.
+
+    req-stackarmor-vdr-search-1
+    """
+    p = _with_defaults(inputs)
+    rows = pain_rows(p, db_alias=db_alias)
+    if p.get("vuln_id"):
+        rows = [r for r in rows if r["vuln_id"] == p["vuln_id"]]
     return _envelope(rows, p["max_results"])
+
+
+SUMMARY_VIEWS = ("by_pain", "assumptions")
+SUMMARY_INPUT_SCHEMA: dict[str, Any] = {
+    **INPUT_SCHEMA,
+    "properties": {
+        **{k: v for k, v in INPUT_SCHEMA["properties"].items() if k not in ("entity_id", "vuln_id", "max_results")},
+        "view": {"type": "string", "enum": list(SUMMARY_VIEWS), "default": "by_pain"},
+    },
+}
+
+
+def stackarmor_summary(search: Search, inputs: dict[str, Any], *, db_alias: str, layer: str = "full") -> dict[str, Any]:
+    """Counts of the `stackarmor-pain` rows, for charts and cards (`req-stackarmor-vdr-summary`).
+
+    `by_pain`: one row for each N-level N1 to N5 (`pain`, `rows`, `percent`). `assumptions`: one row of counts
+    (`rows`, `unclassified`, `container_owned`, `archetype`, `override`, `assumed_impact`, `assumed_agency`,
+    `stamped_agency`), so a reader sees how much of the result is the conservative result.
+    """
+    props = SUMMARY_INPUT_SCHEMA["properties"]
+    unknown = sorted(set(inputs) - set(props))
+    if unknown:
+        raise ValueError(f"unknown input {', '.join(unknown)}")
+    view = inputs.get("view", props["view"]["default"])
+    if view not in SUMMARY_VIEWS:
+        raise ValueError(f"view must be one of {', '.join(SUMMARY_VIEWS)}")
+    p = _with_defaults({k: v for k, v in inputs.items() if k != "view"})
+    rows = pain_rows(p, db_alias=db_alias)
+    if view == "by_pain":
+        counts = Counter(r["pain"] for r in rows)
+        out = [
+            {
+                "pain": level,
+                "rows": counts.get(level, 0),
+                "percent": round(100 * counts.get(level, 0) / len(rows), 1) if rows else None,
+            }
+            for level in ("N1", "N2", "N3", "N4", "N5")
+        ]
+    else:
+        source = Counter(r["profile_source"] for r in rows)
+        out = [
+            {
+                "rows": len(rows),
+                "unclassified": source.get("unclassified", 0),
+                "container_owned": source.get("container", 0),
+                "archetype": source.get("archetype", 0),
+                "override": source.get("override", 0),
+                "assumed_impact": sum(1 for r in rows if r["impact_source"] == "assumed"),
+                "assumed_agency": sum(1 for r in rows if r["multi_agency_source"] == "assumed"),
+                "stamped_agency": sum(1 for r in rows if r["multi_agency_source"] == "stamp"),
+            }
+        ]
+    return {"nodes": [], "edges": [], "rows": out, "info": {"row_count": len(out)}, "warnings": {}}
 
 
 def stackarmor_assets(search: Search, inputs: dict[str, Any], *, db_alias: str, layer: str = "full") -> dict[str, Any]:
