@@ -267,6 +267,7 @@ def pain_rows(p: dict[str, Any], *, db_alias: str) -> list[dict[str, Any]]:
                 "m": multi_agency,
                 "multi_agency_source": multi_agency_source,
                 "pain": result.pain,
+                "pain_rank": int(result.pain[1:]),
                 "lev": lev,
                 "irv": irv,
                 "column": column,
