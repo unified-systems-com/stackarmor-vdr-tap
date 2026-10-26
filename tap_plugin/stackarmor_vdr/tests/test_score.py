@@ -160,3 +160,68 @@ class TestExposure:
         assert (
             exposure.likely_exploitable(backed, kev, 0.99 if kev else 0.0, internet_reachable=True, **self.KW) is backed
         )
+
+
+class TestMalformedVectors:
+    """The codex review of 2026-10-25: a string that only looks like a vector must never lower PAIN."""
+
+    @pytest.mark.spec("req-stackarmor-vdr-impact-4")
+    @pytest.mark.parametrize(
+        "vector",
+        [
+            "garbage/C:N/I:N/A:N",
+            "CVSS:3.1/AV:WHATEVER/C:N/I:N/A:N",
+            "CVSS:3.1/C:N/I:N/A:N",
+            "AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
+            "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N",
+            "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:X",
+            "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N",
+            "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:N/SI:N/SA:Q",
+        ],
+    )
+    def test_incomplete_or_invalid_base_vector_is_assumed_high(self, vector: str) -> None:
+        got = impact.parse_impact(vector, "3.1")
+        assert (got.vector, got.source) == (("high", "high", "high"), "assumed")
+        assert run(got.vector, (H, H, H), 1).pain == "N5"
+
+    @pytest.mark.spec("req-stackarmor-vdr-impact-4")
+    def test_a_valid_vector_of_no_impact_stays_none_and_n1(self) -> None:
+        got = impact.parse_impact("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N", "3.1")
+        assert (got.vector, got.source) == (("none", "none", "none"), "vector")
+        assert run(got.vector, (H, H, H), 1).pain == "N1"
+
+
+class TestPolicyDomain:
+    GOOD = {
+        "impact_weights": {"none": 0, "low": 0.22, "high": 0.56},
+        "requirement_weights": {"low": 0.5, "medium": 1.0, "high": 1.5},
+        "u1": 0.28, "u2": 0.56, "theta3": 0.933, "epss_irv": 0.2, "epss_non_irv": 0.55,
+    }  # fmt: skip
+
+    @pytest.mark.spec("req-stackarmor-vdr-search-14")
+    def test_the_defaults_are_inside_the_domain(self) -> None:
+        from tap_plugin.stackarmor_vdr.policy import validate_policy
+
+        validate_policy(self.GOOD)
+
+    @pytest.mark.spec("req-stackarmor-vdr-search-14")
+    @pytest.mark.parametrize(
+        "change",
+        [
+            {"impact_weights": {"none": 0, "low": 0, "high": 0}},  # 0 / 0
+            {"impact_weights": {"none": 0, "low": 0.22, "high": 1.0}, "requirement_weights": {"low": 1, "medium": 2, "high": 3}},
+            {"impact_weights": {"none": 0.3, "low": 0.22, "high": 0.56}},
+            {"requirement_weights": {"low": 1.5, "medium": 1.0, "high": 0.5}},
+            {"requirement_weights": {"low": 0, "medium": 1.0, "high": 1.5}},
+            {"u1": 0.6},
+            {"u2": 0.999},  # above D_H
+            {"theta3": 0},
+            {"theta3": 1.2},
+            {"epss_irv": 1.5},
+        ],
+    )
+    def test_outside_the_domain_is_refused(self, change: dict) -> None:
+        from tap_plugin.stackarmor_vdr.policy import PolicyError, validate_policy
+
+        with pytest.raises(PolicyError):
+            validate_policy({**self.GOOD, **change})
