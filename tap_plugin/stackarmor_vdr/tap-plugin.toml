@@ -34,6 +34,7 @@ stackarmor-pain = "tap_plugin.stackarmor_vdr.searches.pain.stackarmor_pain"
 stackarmor-assets = "tap_plugin.stackarmor_vdr.searches.pain.stackarmor_assets"
 stackarmor-summary = "tap_plugin.stackarmor_vdr.searches.pain.stackarmor_summary"
 stackarmor-trace = "tap_plugin.stackarmor_vdr.searches.pain.stackarmor_trace"
+stackarmor-finding = "tap_plugin.stackarmor_vdr.searches.finding.stackarmor_finding"
 
 [[boot.records]]
 name = "ci"

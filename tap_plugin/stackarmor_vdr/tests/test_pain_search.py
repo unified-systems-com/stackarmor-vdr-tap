@@ -526,3 +526,53 @@ class TestParametersValidated:
         Estate()
         with pytest.raises(ValueError, match="must"):
             run(**inputs)
+
+
+class TestFindingWalkthrough:
+    @staticmethod
+    def keys(row: dict[str, Any]) -> dict[str, Any]:
+        return {"finding_id": row["finding_id"], "component_id": row["component_id"], "owner_id": row["owner_id"]}
+
+    @staticmethod
+    def walk(**inputs: Any) -> dict[str, Any]:
+        from tap_plugin.stackarmor_vdr.searches import finding
+
+        return finding.stackarmor_finding(None, inputs, db_alias="default")  # type: ignore[arg-type]
+
+    @pytest.mark.spec("req-stackarmor-vdr-finding-1")
+    @pytest.mark.spec("req-stackarmor-vdr-finding-2")
+    def test_the_walkthrough_is_the_rows_own_numbers(self) -> None:
+        estate = Estate()
+        estate.stamp(archetype="app_tier")
+        row = one()
+        out = self.walk(**self.keys(row))
+        steps = {r["title"]: r for r in out["rows"] if r["kind"] == "step"}
+        shown = {i["label"]: i["value"] for i in steps["The Score"]["results"]}
+        assert (shown["U"], shown["S"]) == (row["u"], row["s"])
+        assert steps["The PAIN Level"]["results"][0]["value"] == row["pain"]
+        assert steps["The Word"]["results"][0]["value"] == row["word"]
+        assert len([r for r in out["rows"] if r["kind"] == "step"]) == 12 and out["rows"][0]["kind"] == "breakdown"
+
+    @pytest.mark.spec("req-stackarmor-vdr-finding-9")
+    def test_a_key_that_matches_no_row_is_not_found_and_bad_input_is_refused(self) -> None:
+        estate = Estate()
+        estate.stamp(archetype="app_tier")
+        row = one()
+        out = self.walk(**{**self.keys(row), "owner_id": "00000000-0000-0000-0000-000000000000"})
+        assert out["rows"] == [] and "not_found" in out["warnings"]
+        with pytest.raises(ValueError, match="owner_id"):
+            self.walk(finding_id=row["finding_id"], component_id=row["component_id"])
+        with pytest.raises(ValueError, match="unknown input"):
+            self.walk(**self.keys(row), bogus=1)
+
+    @pytest.mark.spec("req-stackarmor-vdr-finding-10")
+    def test_registered_and_read_only(self) -> None:
+        from tap_grid.registry import get_search_runner
+        from tap_plugin.stackarmor_vdr.searches import finding
+
+        assert get_search_runner("tap_plugin.stackarmor_vdr.searches.finding:stackarmor-finding") is finding.stackarmor_finding
+        estate = Estate()
+        estate.stamp(archetype="app_tier")
+        before = Entity.objects.count()
+        self.walk(**self.keys(one()))
+        assert Entity.objects.count() == before

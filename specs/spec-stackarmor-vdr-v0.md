@@ -53,7 +53,7 @@ Three states. A value the plugin cannot know is reported as assumed, never as th
 | req-stackarmor-vdr-summary | [Summary Counts](#summary-counts) | Implemented | The `stackarmor-summary` `module` Search runner: counts of the `stackarmor-pain` rows by PAIN level and by what was assumed, for charts and cards. |
 | req-stackarmor-vdr-trace | [Trace](#trace) | Implemented | The `stackarmor-trace` `module` Search runner: the objects behind one finding's score (finding, vulnerability, component, owner, programs, stamps, archetypes) as a graph, for a graph panel. |
 | req-stackarmor-vdr-panel-prose | [The Prose Panel](#the-prose-panel) | Implemented | The `stackarmor_prose` panel type: styled prose from config text, as plain paragraphs, a magazine-style method or a numbered stepper, themed from the palette tokens, text always escaped. |
-| req-stackarmor-vdr-finding | [Finding Walk-Through](#finding-walk-through) | Proposed | The `stackarmor-finding` `module` Search runner: one finding on one component under one owner, returned as a breakdown and as the ordered steps of its evaluation. |
+| req-stackarmor-vdr-finding | [Finding Walk-Through](#finding-walk-through) | In Development | The `stackarmor-finding` `module` Search runner: one finding on one component under one owner, returned as a breakdown and as the ordered steps of its evaluation. |
 | req-stackarmor-vdr-panel-finding | [The Finding Panel](#the-finding-panel) | Proposed | The `stackarmor_finding` panel type: the breakdown, one field to a line with each value linked to its step, and the walk-through, a description column beside a values column with each step expandable. |
 | req-stackarmor-vdr-nongoals | [v0 Non-Goals](#v0-non-goals) | Implemented | What this version does not build. |
 | req-stackarmor-vdr-ceiling | [Intended-Use Ceiling](#v0-non-goals) | Backlog | The Security Requirements ceiling per agency scope; until it exists the result is the uncapped, conservative compatibility mode and says so. |
@@ -345,7 +345,7 @@ Every colour is a theme token (`rgb(var(--tap-...))` from `tap_web/static/tap_we
 ----
 RID: `req-stackarmor-vdr-finding`
 
-Status: `Proposed`
+Status: `In Development`
 
 The basic unit of the method is one vulnerability on one component under one owner: vulnerability X in library Y as used by program Z. `stackarmor-pain` already returns exactly that grain, one row for each finding, component and owner (a row's container is part of it). `stackarmor-finding` explains one such row: how each number came from the one before it, so a reader meets the method in the context of a real vulnerability. Ruled by George, 2026-10-26 (the unit is finding, component and owner; container rows are linkable; StackArmor only).
 
@@ -381,17 +381,17 @@ The `summary` of all twelve steps together holds at most 550 words, which is one
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-stackarmor-vdr-finding-1 | One Row Is The Subject | Proposed | The runner returns the walk-through of the one `stackarmor-pain` row whose `finding_id`, `component_id`, `owner_id` and, when given, `container_id` match the inputs, for a program owner and for a container owner alike. | The grain of the method. |
-| req-stackarmor-vdr-finding-2 | The Same Numbers As The Row | Proposed | Every figure in the breakdown and the steps equals the field of that `stackarmor-pain` row under the same inputs, and the runner holds no second scoring routine. | One computation (`req-stackarmor-vdr-search-2`). |
-| req-stackarmor-vdr-finding-3 | Values Carry Down | Proposed | Each step's `inputs` are the `results` of the steps it reads, so no value first appears in a step without having been a result above it or a stated input. | Reads like working an equation. |
-| req-stackarmor-vdr-finding-4 | A Container Shows Its Programs | Proposed | For a container owner, step 3 lists the programs behind it with each one's stamp or archetype and names, per requirement, the program whose level was taken. | `profile_source` `container`. |
-| req-stackarmor-vdr-finding-5 | Assumed Is Marked | Proposed | A value that rests on an unclassified owner, an assumed impact, an assumed agency flag or an unset exposure factor has `assumed` true in its breakdown row and its step, and step 12 lists each one; a result that assumes nothing says so. | Missing data is not evidence. |
-| req-stackarmor-vdr-finding-6 | Every Breakdown Field Has A Step | Proposed | Each breakdown row's `step` names a step that exists, and the two lists are in the order of the steps. | |
-| req-stackarmor-vdr-finding-7 | One Page Of Summaries | Proposed | The twelve `summary` texts total at most 550 words and none exceeds two sentences or 45 words. | If it cannot be said on one page it is not understood. |
-| req-stackarmor-vdr-finding-8 | Detail On Request | Proposed | Every step carries a `detail` text longer than its `summary`, which cites the memo section followed and names any local choice. | Local choices: `req-stackarmor-vdr-nongoals`. |
-| req-stackarmor-vdr-finding-9 | The Row Is Not Found | Proposed | A key that matches no row returns no rows and a `not_found` warning; a missing required input or an unknown one is refused with a `ValueError` naming it. | As `req-stackarmor-vdr-trace-4`. |
-| req-stackarmor-vdr-finding-10 | Registered, Read Only | Proposed | The runner is registered as `tap_plugin.stackarmor_vdr.searches.finding:stackarmor-finding`, writes nothing, and takes its parameter defaults from the one `INPUT_SCHEMA`. | |
-| req-stackarmor-vdr-finding-11 | Memo Examples Walk Through | Proposed | The five worked examples of the memo, run through the runner, give steps whose U, S, word and N-level are the memo's printed values. | The same five as `req-stackarmor-vdr-score`. |
+| req-stackarmor-vdr-finding-1 | One Row Is The Subject | In Development | The runner returns the walk-through of the one `stackarmor-pain` row whose `finding_id`, `component_id`, `owner_id` and, when given, `container_id` match the inputs, for a program owner and for a container owner alike. | The grain of the method. |
+| req-stackarmor-vdr-finding-2 | The Same Numbers As The Row | In Development | Every figure in the breakdown and the steps equals the field of that `stackarmor-pain` row under the same inputs, and the runner holds no second scoring routine. | One computation (`req-stackarmor-vdr-search-2`). |
+| req-stackarmor-vdr-finding-3 | Values Carry Down | In Development | Each step's `inputs` are the `results` of the steps it reads, so no value first appears in a step without having been a result above it or a stated input. | Reads like working an equation. |
+| req-stackarmor-vdr-finding-4 | A Container Shows Its Programs | In Development | For a container owner, step 3 lists the programs behind it with each one's stamp or archetype and names, per requirement, the program whose level was taken. | `profile_source` `container`. |
+| req-stackarmor-vdr-finding-5 | Assumed Is Marked | In Development | A value that rests on an unclassified owner, an assumed impact, an assumed agency flag or an unset exposure factor has `assumed` true in its breakdown row and its step, and step 12 lists each one; a result that assumes nothing says so. | Missing data is not evidence. |
+| req-stackarmor-vdr-finding-6 | Every Breakdown Field Has A Step | In Development | Each breakdown row's `step` names a step that exists, and the two lists are in the order of the steps. | |
+| req-stackarmor-vdr-finding-7 | One Page Of Summaries | In Development | The twelve `summary` texts total at most 550 words and none exceeds two sentences or 45 words. | If it cannot be said on one page it is not understood. |
+| req-stackarmor-vdr-finding-8 | Detail On Request | In Development | Every step carries a `detail` text longer than its `summary`, which cites the memo section followed and names any local choice. | Local choices: `req-stackarmor-vdr-nongoals`. |
+| req-stackarmor-vdr-finding-9 | The Row Is Not Found | In Development | A key that matches no row returns no rows and a `not_found` warning; a missing required input or an unknown one is refused with a `ValueError` naming it. | As `req-stackarmor-vdr-trace-4`. |
+| req-stackarmor-vdr-finding-10 | Registered, Read Only | In Development | The runner is registered as `tap_plugin.stackarmor_vdr.searches.finding:stackarmor-finding`, writes nothing, and takes its parameter defaults from the one `INPUT_SCHEMA`. | |
+| req-stackarmor-vdr-finding-11 | Memo Examples Walk Through | In Development | The five worked examples of the memo, run through the runner, give steps whose U, S, word and N-level are the memo's printed values. | The same five as `req-stackarmor-vdr-score`. |
 
 ### The Finding Panel
 ----
