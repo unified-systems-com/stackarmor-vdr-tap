@@ -7,7 +7,8 @@ through `tap_grid.gryphon.read_scope` with the caller's `db_alias`, return rows 
 at them are the instance's.
 
 A row whose `profile_source` is `unclassified` or `container`, or whose `multi_agency_source` is `assumed`, is the
-conservative compatibility result and is not an evidenced, agency-specific derivation of the method.
+conservative compatibility result and is not an evidenced, agency-specific derivation of the method. Every row is also
+``uncapped``: the memo's intended-use ceiling is not applied, so every result is the uncapped (compatibility) subset.
 
 Parameters live in ``INPUT_SCHEMA``, once: a Search node copies it as its ``input_schema`` and the runner fills any missing
 input from it, so a caller that passes nothing gets the same answer as the Search. The archetype catalog is not here; it is
@@ -34,6 +35,7 @@ from ..exposure import likely_exploitable
 from ..impact import parse_impact
 from ..models.archetype import Archetype
 from ..models.asset_profile import AssetProfile
+from ..policy import validate_policy
 from ..score import score
 
 PROFILES_EDGE = "PROFILES_PROGRAM__stackarmor_vdr"
@@ -100,6 +102,7 @@ def _with_defaults(inputs: dict[str, Any]) -> dict[str, Any]:
         raise ValueError(f"unknown input {', '.join(unknown)}")
     merged = {key: sub["default"] for key, sub in props.items() if "default" in sub}
     merged.update({k: v for k, v in inputs.items() if v is not None})
+    validate_policy(merged)  # a weight or threshold outside the method's domain is refused before any row is scored
     return merged
 
 
@@ -291,6 +294,7 @@ def pain_rows(p: dict[str, Any], *, db_alias: str) -> list[dict[str, Any]]:
                 "irv": irv,
                 "column": column,
                 "fedramp_class": p["fedramp_class"],
+                "uncapped": True,  # the intended-use ceiling is not applied (`req-stackarmor-vdr-search-15`)
                 "deadline_hours": deadline_hours(p["fedramp_class"], result.pain, column, db_alias=db_alias),
             }
         )

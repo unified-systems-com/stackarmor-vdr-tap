@@ -2,7 +2,7 @@
 
 CVSS 3.0 and 3.1 give ``C``, ``I`` and ``A`` as None, Low or High. CVSS 4.0 gives ``VC``, ``VI`` and ``VA`` (the memo's
 limited compatibility path); the Subsequent-System metrics ``SC``, ``SI`` and ``SA`` are returned as evidence and not
-scored. A missing or unparseable vector is High on all three with source ``assumed``, because missing data must not lower
+scored. A missing, malformed or incomplete vector (no `CVSS:x.y` prefix, a missing or out-of-range Base metric) is High on all three with source ``assumed``, because missing data must not lower
 PAIN.
 """
 
@@ -12,6 +12,18 @@ from dataclasses import dataclass
 
 LEVEL = {"N": "none", "L": "low", "H": "high"}
 HIGH = ("high", "high", "high")
+
+_CIA = "NLH"
+# The Base metrics each version requires, with their permitted values (CVSS 3.1 section 2 and CVSS 4.0 section 2.1). Optional
+# Temporal, Environmental and Supplemental metrics are not read, so they are not checked.
+BASE_METRICS: dict[str, dict[str, str]] = {
+    "3.0": {"AV": "NALP", "AC": "LH", "PR": "NLH", "UI": "NR", "S": "UC", "C": _CIA, "I": _CIA, "A": _CIA},
+    "3.1": {"AV": "NALP", "AC": "LH", "PR": "NLH", "UI": "NR", "S": "UC", "C": _CIA, "I": _CIA, "A": _CIA},
+    "4.0": {
+        "AV": "NALP", "AC": "LH", "AT": "NP", "PR": "NLH", "UI": "NPA",
+        "VC": "HLN", "VI": "HLN", "VA": "HLN", "SC": "HLN", "SI": "HLN", "SA": "HLN",
+    },  # fmt: skip
+}
 
 
 @dataclass(frozen=True)
@@ -53,7 +65,12 @@ def parse_impact(cvss_vector: str | None, cvss_version: str | None) -> Impact:
     if metrics is None:
         return assumed
     prefix = cvss_vector.strip().split("/", 1)[0]
-    version = prefix.removeprefix("CVSS:") if prefix.startswith("CVSS:") else (cvss_version or "")
+    if not prefix.startswith("CVSS:"):
+        return assumed  # a vector without its version prefix is not a CVSS vector string
+    version = prefix.removeprefix("CVSS:")
+    required = BASE_METRICS.get(version)
+    if required is None or any(metrics.get(key, "") not in tuple(values) for key, values in required.items()):
+        return assumed  # an incomplete or invalid Base vector says nothing about impact, so it never lowers PAIN
     if version in ("3.0", "3.1"):
         base = _levels(metrics, ("C", "I", "A"))
         return Impact(*base, source="vector") if base else assumed

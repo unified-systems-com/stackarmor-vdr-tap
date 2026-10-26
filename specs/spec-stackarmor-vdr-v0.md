@@ -103,6 +103,7 @@ Status: `Implemented`
 | req-stackarmor-vdr-impact-1 | Version 3 Vectors | Implemented | A 3.0 or 3.1 vector gives C, I and A as None, Low or High. | |
 | req-stackarmor-vdr-impact-2 | Version 4 Vectors | Implemented | A 4.0 vector gives C, I and A from VC, VI and VA; the subsequent-system metrics are returned and not scored. | The memo's limited compatibility path. |
 | req-stackarmor-vdr-impact-3 | Missing Is High | Implemented | A missing or unparseable vector gives High on all three with `impact_source` `assumed`. | |
+| req-stackarmor-vdr-impact-4 | Malformed Is High | Implemented | A vector with no `CVSS:3.0`, `CVSS:3.1` or `CVSS:4.0` prefix, a missing Base metric or a Base metric outside its permitted values gives High on all three with `impact_source` `assumed`; a valid vector of no impact stays `vector` and none. | A string that only looks like a vector must never lower PAIN. Found by the codex review of 2026-10-25. |
 
 ### Likely Exploitable
 ----
@@ -254,6 +255,8 @@ Two `module` Search runners in `tap_plugin/stackarmor_vdr/searches/`, under the 
 | req-stackarmor-vdr-search-9 | Stamps Are Read Through The Edge | Implemented | The Search reads a program's profile only from `asset_profile` nodes reached by `PROFILES_PROGRAM` with the Search's `scheme`, and their archetypes only through `USES_ARCHETYPE`, and from no dimension key. | |
 | req-stackarmor-vdr-search-11 | One Vulnerability | Implemented | The optional input `vuln_id` limits `stackarmor-pain` to the rows of that vulnerability. | Lets a page show one CVE across different assets. |
 | req-stackarmor-vdr-search-10 | Rows Carry Their Scheme | Implemented | Every row of both Searches carries `scheme`, the Search input. | So the result can be compared with another scheme's. |
+| req-stackarmor-vdr-search-14 | Parameters Are Validated | Implemented | Weights and thresholds outside the method's domain are refused with a named error before any row is scored: impact weights `0 <= none < low < high <= 1`, requirement weights `0 < low <= medium <= high`, impact high times requirement high at most 1, `0 < u1 < u2 <= D_H`, `0 < theta3 <= 1`, EPSS thresholds in `[0, 1]`. | All-zero impact weights divided 0 by 0, and impact 1 with requirement 3 scored U = -3. A what-if run may pass its own weights inside this domain; the defaults are the governed policy. |
+| req-stackarmor-vdr-search-15 | Rows Say They Are Uncapped | Implemented | Every `stackarmor-pain` row carries `uncapped` true while the intended-use ceiling (`req-stackarmor-vdr-ceiling`) is Backlog, including a row whose profile and agency flag are fully stamped. | A stamp supplies the requirements, it does not derive them from the agency's intended use. |
 
 ### Summary Counts
 ----
@@ -349,6 +352,8 @@ This version does not:
 - implement the memo's intended-use ceiling, mitigation ladder, per-asset agency flag or per-library profile (the Backlog rows), or the memo's cross-system aggregation of CVSS v4.0 subsequent-system impact, which the memo itself does not specify;
 - ship pages, or any panel that reads the grid: the Searches are the surface other pages read (its one panel type, `stackarmor_prose`, takes only config, `req-stackarmor-vdr-panel-prose`);
 - ship any model or edge beyond the stamp, the archetype and their two edges.
+
+Local choices, named so they are not read as exact conformance to the memo: an evidence-backed `likely_exploitable` false overrides KEV true (`req-stackarmor-vdr-exposure`), where the memo reads KEV or EPSS; the agency flag is stamped on a program or assumed, not derived per finding; and `deadline_hours` is the PVR table allowance for the row's class, PAIN and exposure column, not a due date or an SLA verdict. The method source is the stackArmor memo at `stackArmor/rfc-fedramp-vdr` commit `e3368d72d4354d107d6002cdc881a1d8110d617f`.
 
 The model catalog and edge list above are unchanged by v0.2.0; the stamp gains one field (`multi_agency`).
 

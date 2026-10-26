@@ -119,11 +119,12 @@ class TestRow:
         assert set(row) >= {
             "finding_id", "vuln_id", "component", "component_id", "container_id", "container", "owner_kind", "owner_id",
             "owner", "scheme", "profile_source", "impact_source", "c", "i", "a", "cr", "ir", "ar", "u", "s", "word", "m",
-            "multi_agency_source", "pain", "lev", "irv", "column", "fedramp_class", "deadline_hours",
+            "multi_agency_source", "pain", "lev", "irv", "column", "fedramp_class", "deadline_hours", "uncapped",
         }  # fmt: skip
         assert (row["owner_kind"], row["owner_id"], row["container_id"]) == (
             "program", str(estate.program.pk), str(estate.container.pk),
         )  # fmt: skip
+        assert row["uncapped"] is True  # `search-15`: even a fully stamped row is the uncapped subset
         assert (row["c"], row["i"], row["a"]) == ("high", "high", "high")
         assert levels(row) == ("medium", "medium", "medium")
         assert (row["u"], row["word"], row["pain"]) == ("0.914816", "Disruptive", "N4")
@@ -510,3 +511,18 @@ class TestSurface:
             "v0.10.2",
             "v0.8.7",
         )
+
+
+class TestParametersValidated:
+    @pytest.mark.spec("req-stackarmor-vdr-search-14")
+    @pytest.mark.parametrize(
+        "inputs",
+        [
+            {"impact_weights": {"none": 0, "low": 0, "high": 0}},
+            {"impact_weights": {"none": 0, "low": 0.22, "high": 1.0}, "requirement_weights": {"low": 1, "medium": 2, "high": 3}},
+        ],
+    )
+    def test_a_weight_set_outside_the_domain_is_refused_before_any_row(self, inputs: dict[str, Any]) -> None:
+        Estate()
+        with pytest.raises(ValueError, match="must"):
+            run(**inputs)
