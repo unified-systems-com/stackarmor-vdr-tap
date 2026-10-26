@@ -16,3 +16,8 @@ class StackarmorVdrConfig(TapPluginConfig):
         from tap_web.registry import panel_type_registry
 
         panel_type_registry.register(StackarmorProsePanelType.slug, StackarmorProsePanelType)
+
+        # The finding walk-through panel type (req-stackarmor-vdr-panel-finding).
+        from tap_plugin.stackarmor_vdr.panels.finding import StackarmorFindingPanelType
+
+        panel_type_registry.register(StackarmorFindingPanelType.slug, StackarmorFindingPanelType)
