@@ -1,0 +1,52 @@
+/* stackarmor_finding panel (req-stackarmor-vdr-panel-finding). BEM under .sa-find-*.
+   Every colour is a TAP theme token (tap_web/static/tap_web/css/theme.css), which the theme redefines for dark,
+   so no dark-mode block is needed here (req-web-theme-scope): no hex, no rgb literals. */
+
+.tap-panel--sa-finding {
+  --sa-ink: rgb(var(--tap-slate-800));
+  --sa-body: rgb(var(--tap-slate-700));
+  --sa-muted: rgb(var(--tap-slate-600));
+  --sa-rule: rgb(var(--tap-slate-200));
+  --sa-tint: rgb(var(--tap-slate-50));
+  --sa-accent: rgb(var(--tap-blue-600));
+  --sa-accent-ink: rgb(var(--tap-blue-700));
+  --sa-warn: rgb(var(--tap-amber-700));
+  container-type: inline-size;
+  color: var(--sa-body);
+}
+
+.sa-find-empty { color: var(--sa-muted); font-style: italic; margin: 0.6rem 0 0; }
+.sa-find-assumed { font-size: 0.75em; letter-spacing: 0.03em; text-transform: uppercase; color: var(--sa-warn); border: 1px solid var(--sa-warn); border-radius: 0.25rem; padding: 0 0.3em; }
+
+/* Breakdown: one line to a field, label then value, never a table. */
+.sa-find-breakdown { margin-top: 0.6rem; max-width: 46rem; }
+.sa-find-line { margin: 0; padding: 0.3rem 0; border-bottom: 1px solid var(--sa-rule); display: flex; gap: 0.75rem; align-items: baseline; }
+.sa-find-line__label { flex: 0 0 11rem; color: var(--sa-muted); font-size: 0.85rem; }
+.sa-find-line__value { color: var(--sa-ink); font-weight: 600; }
+a.sa-find-line__value { color: var(--sa-accent-ink); text-decoration: underline; text-underline-offset: 0.15em; }
+
+/* Walk-through: description left, values right. */
+.sa-find-walk { margin-top: 0.6rem; }
+.sa-find-step { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1.5rem; padding: 0.9rem 0; border-top: 1px solid var(--sa-rule); break-inside: avoid; scroll-margin-top: 1rem; }
+.sa-find-step__title { margin: 0 0 0.3rem; font-size: 1rem; color: var(--sa-ink); }
+.sa-find-step__n { display: inline-block; min-width: 1.5em; color: var(--sa-accent-ink); }
+.sa-find-step__summary { margin: 0; line-height: 1.55; }
+.sa-find-step__more { margin-top: 0.4rem; color: var(--sa-muted); font-size: 0.9rem; }
+.sa-find-step__more summary { cursor: pointer; color: var(--sa-accent-ink); }
+.sa-find-step__more p { margin: 0.4rem 0 0; line-height: 1.55; }
+.sa-find-step__values { background: var(--sa-tint); border-left: 3px solid var(--sa-rule); padding: 0.5rem 0.75rem; font-variant-numeric: tabular-nums; align-self: start; }
+.sa-find-val { margin: 0.15rem 0; display: flex; gap: 0.6rem; justify-content: space-between; }
+.sa-find-val__label { color: var(--sa-muted); font-size: 0.85rem; }
+.sa-find-val__value { color: var(--sa-ink); text-align: right; overflow-wrap: anywhere; }
+.sa-find-results { margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px solid var(--sa-rule); }
+.sa-find-val--result .sa-find-val__value { font-weight: 700; }
+
+@container (max-width: 40rem) {
+  .sa-find-step { grid-template-columns: minmax(0, 1fr); gap: 0.5rem; }
+  .sa-find-line { flex-direction: column; gap: 0; }
+}
+
+@media print {
+  .sa-find-step { break-inside: avoid; }
+  .sa-find-step__values { background: none; }
+}

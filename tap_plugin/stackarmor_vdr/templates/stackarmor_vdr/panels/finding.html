@@ -1,0 +1,34 @@
+<div class="tap-panel tap-panel--sa-finding">
+    {% if not panel.config.hide_header %}{% include "tap_web/panel_header.html" %}{% endif %}
+    {% if state == "bad_config" %}
+    <p class="sa-find-empty">Panel config invalid: {{ detail }}</p>
+    {% elif state == "failed" %}
+    <p class="sa-find-empty">The walk-through could not be read.</p>
+    {% elif state == "not_found" %}
+    <p class="sa-find-empty">No finding matches this component and owner.</p>
+    {% elif part == "breakdown" %}
+    <div class="sa-find-breakdown">
+        {% for line in breakdown %}
+        <p class="sa-find-line"><span class="sa-find-line__label">{{ line.label }}</span> {% if line.step %}<a class="sa-find-line__value" href="#step-{{ line.step }}">{{ line.value }}</a>{% else %}<span class="sa-find-line__value">{{ line.value }}</span>{% endif %}{% if line.assumed %} <span class="sa-find-assumed">assumed</span>{% endif %}</p>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="sa-find-walk">
+        {% for step in steps %}
+        <section class="sa-find-step" id="{{ step.anchor }}">
+            <div class="sa-find-step__desc">
+                <h3 class="sa-find-step__title"><span class="sa-find-step__n">{{ step.number }}</span> {{ step.title }}</h3>
+                <p class="sa-find-step__summary">{{ step.summary }}</p>
+                <details class="sa-find-step__more"><summary>More</summary><p>{{ step.detail }}</p></details>
+            </div>
+            <div class="sa-find-step__values">
+                {% for item in step.inputs %}<p class="sa-find-val"><span class="sa-find-val__label">{{ item.label }}</span> <span class="sa-find-val__value">{{ item.value }}</span>{% if item.assumed %} <span class="sa-find-assumed">assumed</span>{% endif %}</p>{% endfor %}
+                {% if step.results %}<div class="sa-find-results">
+                {% for item in step.results %}<p class="sa-find-val sa-find-val--result"><span class="sa-find-val__label">{{ item.label }}</span> <span class="sa-find-val__value">{{ item.value }}</span>{% if item.assumed %} <span class="sa-find-assumed">assumed</span>{% endif %}</p>{% endfor %}
+                </div>{% endif %}
+            </div>
+        </section>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
