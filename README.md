@@ -1,6 +1,6 @@
 # stackarmor-vdr-tap
 
-StackArmor VDR (`stackarmor_vdr`): the StackArmor method for evaluating FedRAMP 20x vulnerabilities, as a TAP plugin.
+FedRAMP publishes the PAIN levels N1 to N5 and the remediation matrix, and not a rule that turns a vulnerability on an asset into a VDR evaluation with attached SLA. stackArmor's Matthew Venne has published a [whitepaper](https://stackarmor.github.io/rfc-fedramp-vdr/vdr-pain-cvss.pdf) and an [explanatory site](https://stackarmor.github.io/rfc-fedramp-vdr/) that supplies an implementation. This prototype plugin implements their approach using data from the grid.
 
 StackArmor's memo describes how to rate a vulnerability's Potential Agency Impact (PAIN) from the CVSS impact of the vulnerability and what the affected asset needs (its confidentiality, integrity and availability requirement), instead of leaving every finding at the worst case. This plugin holds **only that method**. Everything generic to FedRAMP's VDR process, and anything another method could reuse, lives in `fedramp_20x_vdr`: which asset a finding belongs to, the ordered PAIN levels, the remediation deadline lookup, the evidence-backed factors and the fail-safe profile reduction.
 
