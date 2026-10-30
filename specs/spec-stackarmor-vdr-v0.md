@@ -463,8 +463,25 @@ The HTML is attacker-influenced: a node field that a collector filled from a sca
 - **The one trusted step.** The cleaned string is marked safe in exactly one place, the panel's context builder, and nowhere else in the plugin; the template prints that one variable and every other variable with Django's autoescaping.
 - **Fails closed.** If cleaning raises, the library is missing or the document is over a limit, the panel shows a message saying so and no content; it never falls back to the raw markup or to the markup as text.
 - **Styling.** The panel's stylesheet scopes every rule under `.tap-panel--sa-html`, sets the typography for the allowed tags and the ten classes from theme tokens only (no colour literals), contains its content (`overflow` clipped, `contain: content`), and has a print block. It needs no inline style and no script, so it works under a Content Security Policy that forbids `unsafe-inline`.
-- **Dependency.** The sanitizer is a library, not code written here: the leading candidate is `nh3` (Python bindings for Rust's `ammonia`, built on the `html5ever` parser), which has no cryptography and no network access. Adding it needs approval, and the comparison with the alternatives recorded in this spec before the build (the dependency rule, `build-collector` Step 1.5): exact distribution name and provenance checked on the index, advisories checked, pinned to a version range, FIPS posture declared.
+- **Dependency.** The sanitizer is a library, not code written here: `nh3`, the Python bindings for Rust's `ammonia` (built on the `html5ever` HTML5 parser). Approved by George, 2026-10-29 ("i'm okay adding another include"; the content is any structured text the grid holds, so cleaning markup, not rendering blocks, is the route). The comparison is under Sanitizer Decision below.
 - **Reading is the Search's.** The panel adds no access of its own; what a viewer can see through it is what the linked Search returns to them.
+
+#### Sanitizer Decision
+
+Checked 2026-10-29 from the package index, the projects' repositories and the OSV advisory database, not from memory.
+
+| Axis | `nh3` 0.3.7 (chosen) | `bleach` 6.4.0 | `lxml-html-clean` 0.4.6 | `html-sanitizer` 2.7.0 |
+| --- | --- | --- | --- | --- |
+| Model and parser | Allowlist; Rust `ammonia` 4.1.4 on `html5ever`, a browser-grade HTML5 parser | Allowlist; pure Python on `html5lib` | Blocklist cleaner on `libxml2` (an HTML4 parser) | Allowlist on `lxml` and `lxml-html-clean` |
+| Status | Released 2026-08-23; repository pushed 2026-10-27, 404 stars, 7 open issues, not archived | Package classifier `Development Status :: 7 - Inactive`; its own README calls it deprecated, per nh3's README | Active (2026-10-26) | Stable (2026-10-25) |
+| Security fitness | The sanitizer the lxml cleaner's own README names as the alternative for security-sensitive use | Deprecated | Its README: "not considered appropriate for security sensitive environments" | Inherits that cleaner |
+| Advisories | None against `nh3`; 15 against `ammonia` since 2019, six in 2026 (SVG/MathML mutation XSS, `animate`/`set` tags, CSS `url()`), each fixed in a later `ammonia` release | 13 recorded | Not queried | 2 recorded |
+| Dependencies | None | `webencodings` | `lxml` | `beautifulsoup4`, `lxml`, `lxml-html-clean` |
+| Wheels for Python 3.14 | `cp38-abi3` wheels for Linux x86-64 and aarch64, glibc and musl, macOS, Windows; sdist 25 KB | Pure Python | Needs `lxml` build | Needs `lxml` build |
+| Licence, cryptography | MIT; the package has no cryptography or network code (not independently audited here) | Apache-2.0 | BSD-3-Clause | BSD-3-Clause |
+| Distribution identity | `nh3` on PyPI, author `messense`, source link `github.com/messense/nh3`, which is the repository checked | | | |
+
+Two findings shape how it is used, not whether. First, the 2026 `ammonia` advisories are in SVG, MathML and CSS handling, the three things this panel never allows (no `svg`, `math`, `style` element or `style` attribute), so the allowlist avoids the code they fixed; this is a reason for the narrow allowlist, not a reason to trust the library. Second, `nh3` 0.3.7 bundles `ammonia` 4.1.4, and `ammonia` 4.1.8 and 4.2.4 (2026-10-17) fix RUSTSEC-2026-0373 (CSS `url()` matching), which needs a `style` attribute to be exploitable and so does not reach this panel; the plugin pins `nh3>=0.3.7` and takes later releases as they appear, and a Renovate or equivalent update is the control for the next advisory. Not verified: whether the `nh3` release is built with an attested, trusted-publishing workflow. The comparison is to be repeated when `nh3` gains a release, when a second consumer of a sanitizer appears, or when an advisory names a release in use.
 
 Not in v0, and why: a sandboxed `iframe` mode (the strongest isolation, but it cannot inherit the theme or link to the page's anchors); Markdown input; `style` through a vetted property list; and any write path. They are Backlog if wanted.
 
@@ -488,7 +505,8 @@ Not in v0, and why: a sandboxed `iframe` mode (the strongest isolation, but it c
 | req-stackarmor-vdr-panel-html-14 | Failures Of The Search | Proposed | A Search that fails, or a row or field that is missing or not text, renders a visible message and raises nothing; the error text is logged by class only. | As `req-stackarmor-vdr-panel-finding-9`. |
 | req-stackarmor-vdr-panel-html-15 | Needs No Script Or Inline Style | Proposed | The template holds no `script` element and no `style` attribute or element, and the stylesheet is the only style source, so the panel works under a policy that forbids `unsafe-inline`. | |
 | req-stackarmor-vdr-panel-html-16 | Theme Tokens Only | Proposed | The stylesheet holds no hex or rgb literal, scopes every rule under `.tap-panel--sa-html`, and has a print block. | As `req-stackarmor-vdr-panel-prose-7`. |
-| req-stackarmor-vdr-panel-html-17 | The Dependency Is Recorded | Proposed | The sanitizer library is named in `pyproject`, declared in the FIPS posture, and the comparison with the alternatives, the verified distribution name, its provenance and the advisory check, dated, are recorded in this spec. | Approved before the build. |
+| req-stackarmor-vdr-panel-html-17 | The Dependency Is Recorded | Proposed | `nh3` is in `pyproject` with a lower bound of 0.3.7 and no upper pin below the next major, the manifest's FIPS posture stays `compatible` with a note on the dependency, and the Sanitizer Decision above is kept current. | Approved by George, 2026-10-29. |
+| req-stackarmor-vdr-panel-html-18 | No Style Reaches The Cleaner's Allowlist | Proposed | The cleaner is configured with no `style` attribute, no `style` element and no `svg` or `math` element, and a test asserts the configured allowlist equals the one in this spec, so a library default cannot widen it. | The 2026 advisories are all in those features. |
 
 ### v0 Non-Goals
 ----
