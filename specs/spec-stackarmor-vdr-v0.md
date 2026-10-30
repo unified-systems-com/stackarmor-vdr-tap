@@ -473,7 +473,7 @@ Checked 2026-10-29 from the package index, the projects' repositories and the OS
 | Axis | `nh3` 0.3.7 (chosen) | `bleach` 6.4.0 | `lxml-html-clean` 0.4.6 | `html-sanitizer` 2.7.0 |
 | --- | --- | --- | --- | --- |
 | Model and parser | Allowlist; Rust `ammonia` 4.1.4 on `html5ever`, a browser-grade HTML5 parser | Allowlist; pure Python on `html5lib` | Blocklist cleaner on `libxml2` (an HTML4 parser) | Allowlist on `lxml` and `lxml-html-clean` |
-| Status | Released 2026-08-23; repository pushed 2026-10-27, 404 stars, 7 open issues, not archived | Package classifier `Development Status :: 7 - Inactive`; its own README calls it deprecated, per nh3's README | Active (2026-10-26) | Stable (2026-10-25) |
+| Status | Released 2026-08-23; repository pushed 2026-10-27, 404 stars, 7 open issues, not archived | Package classifier `Development Status :: 7 - Inactive`; called deprecated by the `nh3` README (its own README was not found to say so) | Active (2026-10-26) | Stable (2026-10-25) |
 | Security fitness | The sanitizer the lxml cleaner's own README names as the alternative for security-sensitive use | Deprecated | Its README: "not considered appropriate for security sensitive environments" | Inherits that cleaner |
 | Advisories | None against `nh3`; 15 against `ammonia` since 2019, six in 2026 (SVG/MathML mutation XSS, `animate`/`set` tags, CSS `url()`), each fixed in a later `ammonia` release | 13 recorded | Not queried | 2 recorded |
 | Dependencies | None | `webencodings` | `lxml` | `beautifulsoup4`, `lxml`, `lxml-html-clean` |
