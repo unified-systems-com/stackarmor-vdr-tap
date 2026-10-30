@@ -21,3 +21,8 @@ class StackarmorVdrConfig(TapPluginConfig):
         from tap_plugin.stackarmor_vdr.panels.finding import StackarmorFindingPanelType
 
         panel_type_registry.register(StackarmorFindingPanelType.slug, StackarmorFindingPanelType)
+
+        # The cleaned-HTML panel type (req-stackarmor-vdr-panel-html).
+        from tap_plugin.stackarmor_vdr.panels.html_panel import StackarmorHtmlPanelType
+
+        panel_type_registry.register(StackarmorHtmlPanelType.slug, StackarmorHtmlPanelType)

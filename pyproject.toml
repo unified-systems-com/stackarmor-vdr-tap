@@ -7,7 +7,7 @@ name = "stackarmor-vdr-tap"
 description = "TAP StackArmor VDR plugin — the stackArmor deterministic, CVSS-environmental PAIN method for FedRAMP VDR."
 requires-python = ">=3.14"
 dynamic = ["version"]
-dependencies = ["fedramp-20x-vdr-tap", "computing-core-tap", "compliance-core-tap"]
+dependencies = ["fedramp-20x-vdr-tap", "computing-core-tap", "compliance-core-tap", "nh3>=0.3.7"]
 
 [project.entry-points."tap.plugins"]
 stackarmor_vdr = "tap_plugin.stackarmor_vdr.apps:StackarmorVdrConfig"
