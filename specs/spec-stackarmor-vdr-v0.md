@@ -1,6 +1,6 @@
 # StackArmor VDR Plugin Specification
 
-**`stackarmor_vdr` scores each vulnerability finding's Potential Agency Impact (PAIN) with the deterministic method of stackArmor's memo, from the finding's CVSS impact and what its asset needs, and returns the N-level with its remediation deadline and every number behind it. It is one scoring method on top of `fedramp_20x_vdr`, which owns the reach, the levels and the timeframe tables; it computes on read and stores nothing.**
+FedRAMP publishes the PAIN levels N1 to N5 and the remediation matrix, and not a rule that turns a vulnerability on an asset into a VDR evaluation with attached SLA. stackArmor's Matthew Venne has published a [whitepaper](https://stackarmor.github.io/rfc-fedramp-vdr/vdr-pain-cvss.pdf) and an [explanatory site](https://stackarmor.github.io/rfc-fedramp-vdr/) that supplies an implementation. This prototype plugin implements their approach using data from the grid.
 
 ## Plugin Identity
 
@@ -55,6 +55,7 @@ Three states. A value the plugin cannot know is reported as assumed, never as th
 | req-stackarmor-vdr-panel-prose | [The Prose Panel](#the-prose-panel) | Implemented | The `stackarmor_prose` panel type: styled prose from config text, as plain paragraphs, a magazine-style method or a numbered stepper, themed from the palette tokens, text always escaped. |
 | req-stackarmor-vdr-finding | [Finding Walk-Through](#finding-walk-through) | In Development | The `stackarmor-finding` `module` Search runner: one finding on one component under one owner, returned as a breakdown and as the ordered steps of its evaluation. |
 | req-stackarmor-vdr-panel-finding | [The Finding Panel](#the-finding-panel) | In Development | The `stackarmor_finding` panel type: the breakdown, one field to a line with each value linked to its step, and the walk-through, a description column beside a values column with each step expandable. |
+| req-stackarmor-vdr-panel-html | [The HTML Panel](#the-html-panel) | Proposed | The `stackarmor_html` panel type: styled HTML from config or from a field of a linked Search, cleaned on every render by an allowlist, so grid content can be shown as rich, good-looking markup without being able to run anything, load anything or restyle the page. |
 | req-stackarmor-vdr-nongoals | [v0 Non-Goals](#v0-non-goals) | Implemented | What this version does not build. |
 | req-stackarmor-vdr-ceiling | [Intended-Use Ceiling](#v0-non-goals) | Backlog | The Security Requirements ceiling per agency scope; until it exists the result is the uncapped, conservative compatibility mode and says so. |
 | req-stackarmor-vdr-mitigation | [Mitigation Ladder](#v0-non-goals) | Backlog | Evidence-gated Modified C/I/A (High to Low, never None), the residual-response PAIN proxy and the retained consequence PAIN. |
@@ -428,6 +429,84 @@ Status: `In Development`
 #### Consumer
 
 The plugin ships no page (`req-stackarmor-vdr-nongoals`). An instance builds the page: a route taking `finding_id`, `component_id`, `owner_id` and `container_id`, the two panels, one `USES_SEARCH` edge from each to `stackarmor-finding`, and a `row_url_template` on the StackArmor table that sends every row, program-owned or container-owned, to it. The playground's spec carries that page's requirements.
+
+### The HTML Panel
+----
+RID: `req-stackarmor-vdr-panel-html`
+
+Status: `Proposed`
+
+A page sometimes wants rich text that no existing panel sets well: a styled explanation, a callout, a small table, a figure with a caption. When the markup comes from the grid, it comes from data somebody wrote or something collected, so it is untrusted however it got there. `stackarmor_html` shows such markup with the look of the plugin and the guarantee that it cannot run script, load anything from elsewhere, send anything anywhere or change how the rest of the page looks. Requested by George, 2026-10-27.
+
+#### Threat Model
+
+The HTML is attacker-influenced: a node field that a collector filled from a scanner or an advisory, a Search row, or a config string that anyone with edit access to the panel can change. What it must not be able to do:
+
+| Threat | Example | Closed by |
+| --- | --- | --- |
+| Script execution | `<script>`, `onerror=`, `javascript:` URLs, `<svg onload>` | Tags and attributes outside an allowlist are dropped; only `http`, `https` and `mailto` URL schemes pass; no SVG or MathML. |
+| Mutation XSS | Markup that is safe to the sanitizer and unsafe once the browser re-parses it | A maintained sanitizer built on a browser-grade HTML5 parser, no SVG, MathML or `template`, and the output checked by a second parser. |
+| Loading from elsewhere | `<img src=https://x/pixel>`, CSS `url()`, `<link>`, `<iframe>` | No external resource: `img` may point only at this site; no `style`, `link`, `iframe`, `object`, `embed`, `audio` or `video`. |
+| Sending data out | `<form action=https://x>`, `<meta http-equiv=refresh>`, `<a ping>` | No `form`, `input`, `button`, `meta` or `base`; no `ping`. |
+| Restyling or covering the page | `style="position:fixed;inset:0"`, a fake sign-in box over the real page | No `style` attribute and no `<style>`; `class` limited to a fixed list the plugin styles; the panel's own CSS contains the content to its box. |
+| Name collisions | `<a id=config>`, `name=location` shadowing a script's globals | No `id`, `name` or `form` attribute passes. |
+| Tab-napping | `target=_blank` without `rel` | No `target`; every link gets `rel="noopener noreferrer nofollow"`. |
+| Resource exhaustion | A very large or deeply nested document | A size limit, an element limit and a depth limit, each refusing the whole document. |
+| A bypass that comes back | A sanitizer fix that never reaches stored content | Cleaning is done on every render, never once on write, so a fixed sanitizer fixes what is already stored. |
+
+#### Implementation
+
+`tap_plugin/stackarmor_vdr/htmlsafe.py` holds the cleaning and imports no Django: `clean(html, *, max_bytes, max_elements, max_depth)` returns the cleaned markup and the number of things it removed, or raises `HtmlRefused` for an over-limit document. `tap_plugin/stackarmor_vdr/panels/html_panel.py` defines `StackarmorHtmlPanelType` (slug `stackarmor_html`, view `stackarmor_vdr/panels/html.html`, css `stackarmor_vdr/css/html.css`, no JavaScript), registered in `apps.py` `ready()`.
+
+- **Source.** The config names exactly one of `html` (a string written in the panel's config) or `field` (the row field of the panel's one linked Search that holds the markup, with an optional `row` index, default 0). The Search is run once per render with the page's query parameters, as `stackarmor_finding` does. Both sources are cleaned the same way: where the markup came from earns it no trust.
+- **The cleaning.** An allowlist, not a blocklist. Tags: `p`, `br`, `hr`, `h2` to `h4`, `strong`, `em`, `b`, `i`, `u`, `s`, `sub`, `sup`, `code`, `pre`, `kbd`, `blockquote`, `ul`, `ol`, `li`, `dl`, `dt`, `dd`, `table`, `thead`, `tbody`, `tr`, `th`, `td`, `caption`, `figure`, `figcaption`, `a`, `img`, `span`, `div`, `details`, `summary`. Attributes: `href` and `title` on `a`; `src`, `alt`, `width` and `height` on `img`; `colspan`, `rowspan` and `scope` on table cells; `class` on any tag, filtered to the list below; `lang` and `dir`. Everything else is dropped, together with the content of `script`, `style` and similar tags, not only the tags. Comments, processing instructions and doctype are dropped. `img` `src` must be a path on this site (starts with `/` but not `//`); `a` `href` must be a path on this site, `http`, `https` or `mailto`, or a `#fragment`. The class list is the plugin's: `sa-lead`, `sa-muted`, `sa-callout`, `sa-callout-note`, `sa-callout-warning`, `sa-columns`, `sa-badge`, `sa-figure`, `sa-table`, `sa-quote`.
+- **The one trusted step.** The cleaned string is marked safe in exactly one place, the panel's context builder, and nowhere else in the plugin; the template prints that one variable and every other variable with Django's autoescaping.
+- **Fails closed.** If cleaning raises, the library is missing or the document is over a limit, the panel shows a message saying so and no content; it never falls back to the raw markup or to the markup as text.
+- **Styling.** The panel's stylesheet scopes every rule under `.tap-panel--sa-html`, sets the typography for the allowed tags and the ten classes from theme tokens only (no colour literals), contains its content (`overflow` clipped, `contain: content`), and has a print block. It needs no inline style and no script, so it works under a Content Security Policy that forbids `unsafe-inline`.
+- **Dependency.** The sanitizer is a library, not code written here: `nh3`, the Python bindings for Rust's `ammonia` (built on the `html5ever` HTML5 parser). Approved by George, 2026-10-29 ("i'm okay adding another include"; the content is any structured text the grid holds, so cleaning markup, not rendering blocks, is the route). The comparison is under Sanitizer Decision below.
+- **Reading is the Search's.** The panel adds no access of its own; what a viewer can see through it is what the linked Search returns to them.
+
+#### Sanitizer Decision
+
+Checked 2026-10-29 from the package index, the projects' repositories and the OSV advisory database, not from memory.
+
+| Axis | `nh3` 0.3.7 (chosen) | `bleach` 6.4.0 | `lxml-html-clean` 0.4.6 | `html-sanitizer` 2.7.0 |
+| --- | --- | --- | --- | --- |
+| Model and parser | Allowlist; Rust `ammonia` 4.1.4 on `html5ever`, a browser-grade HTML5 parser | Allowlist; pure Python on `html5lib` | Blocklist cleaner on `libxml2` (an HTML4 parser) | Allowlist on `lxml` and `lxml-html-clean` |
+| Status | Released 2026-08-23; repository pushed 2026-10-27, 404 stars, 7 open issues, not archived | Package classifier `Development Status :: 7 - Inactive`; its own README calls it deprecated, per nh3's README | Active (2026-10-26) | Stable (2026-10-25) |
+| Security fitness | The sanitizer the lxml cleaner's own README names as the alternative for security-sensitive use | Deprecated | Its README: "not considered appropriate for security sensitive environments" | Inherits that cleaner |
+| Advisories | None against `nh3`; 15 against `ammonia` since 2019, six in 2026 (SVG/MathML mutation XSS, `animate`/`set` tags, CSS `url()`), each fixed in a later `ammonia` release | 13 recorded | Not queried | 2 recorded |
+| Dependencies | None | `webencodings` | `lxml` | `beautifulsoup4`, `lxml`, `lxml-html-clean` |
+| Wheels for Python 3.14 | `cp38-abi3` wheels for Linux x86-64 and aarch64, glibc and musl, macOS, Windows; sdist 25 KB | Pure Python | Needs `lxml` build | Needs `lxml` build |
+| Licence, cryptography | MIT; the package has no cryptography or network code (not independently audited here) | Apache-2.0 | BSD-3-Clause | BSD-3-Clause |
+| Distribution identity | `nh3` on PyPI, author `messense`, source link `github.com/messense/nh3`, which is the repository checked | | | |
+
+Two findings shape how it is used, not whether. First, the 2026 `ammonia` advisories are in SVG, MathML and CSS handling, the three things this panel never allows (no `svg`, `math`, `style` element or `style` attribute), so the allowlist avoids the code they fixed; this is a reason for the narrow allowlist, not a reason to trust the library. Second, `nh3` 0.3.7 bundles `ammonia` 4.1.4, and `ammonia` 4.1.8 and 4.2.4 (2026-10-17) fix RUSTSEC-2026-0373 (CSS `url()` matching), which needs a `style` attribute to be exploitable and so does not reach this panel; the plugin pins `nh3>=0.3.7` and takes later releases as they appear, and a Renovate or equivalent update is the control for the next advisory. Not verified: whether the `nh3` release is built with an attested, trusted-publishing workflow. The comparison is to be repeated when `nh3` gains a release, when a second consumer of a sanitizer appears, or when an advisory names a release in use.
+
+Not in v0, and why: a sandboxed `iframe` mode (the strongest isolation, but it cannot inherit the theme or link to the page's anchors); Markdown input; `style` through a vetted property list; and any write path. They are Backlog if wanted.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-stackarmor-vdr-panel-html-1 | Registered With A Described Config | Proposed | The panel type is registered under `stackarmor_html`; its config schema describes every property, requires exactly one of `html` and `field`, refuses unknown keys, and bounds `html` to the size limit. | As `req-stackarmor-vdr-panel-prose-1`. |
+| req-stackarmor-vdr-panel-html-2 | Allowlist Only | Proposed | Every tag in the output is in the tag allowlist and every attribute is allowed on its tag; the test parses the output with a second, independent parser and walks every element. | A check that does not trust the cleaner it checks. |
+| req-stackarmor-vdr-panel-html-3 | Script Cannot Run | Proposed | The published XSS evasion corpus (OWASP filter-evasion vectors), a set of event-handler, `javascript:`, `data:` and `vbscript:` URL vectors, and SVG and MathML vectors, run through the panel, leave no `script` element, no `on*` attribute and no URL with a scheme outside `http`, `https` and `mailto`. | The corpus is a test fixture with its source named. |
+| req-stackarmor-vdr-panel-html-4 | Mutation Vectors | Proposed | A set of known mutation-XSS payloads (nested `noscript`, `style` and `select`, namespace confusion, `<math>` and `<svg>` breakouts) is cleaned to the same output when the output is cleaned again. | Idempotence: `clean(clean(x)) == clean(x)`. |
+| req-stackarmor-vdr-panel-html-5 | Nothing Is Fetched | Proposed | No output element has a `src` or `href` that points off this site except an `a` `href` to `http`, `https` or `mailto`; there is no `style`, `link`, `iframe`, `object`, `embed`, `form`, `meta` or `base`, and no `ping`. | Beacons and exfiltration. |
+| req-stackarmor-vdr-panel-html-6 | Links Are Safe | Proposed | Every `a` in the output has `rel="noopener noreferrer nofollow"` and no `target`. | |
+| req-stackarmor-vdr-panel-html-7 | No Names | Proposed | No output element has `id`, `name` or `form`. | DOM clobbering. |
+| req-stackarmor-vdr-panel-html-8 | Classes Are The Plugin's | Proposed | Only the ten listed classes survive, and a class outside them is removed without removing its element. | |
+| req-stackarmor-vdr-panel-html-9 | Limits Refuse | Proposed | A document over the byte, element or depth limit raises `HtmlRefused` and the panel shows a message and no content. | A depth bomb must not reach the browser or exhaust the parser. |
+| req-stackarmor-vdr-panel-html-10 | Cleaned Every Render | Proposed | The panel cleans the markup each time it renders and stores nothing cleaned; a fixture whose cleaner is changed between two renders shows the second cleaner's output. | |
+| req-stackarmor-vdr-panel-html-11 | Fails Closed | Proposed | When the cleaner raises, or the library cannot be imported, the panel renders a visible message and no content, and neither the raw markup nor an escaped copy of it appears. | |
+| req-stackarmor-vdr-panel-html-12 | One Trusted Step | Proposed | The plugin contains exactly one `mark_safe`, in the panel's context builder, applied to the cleaner's output; the templates use no `safe` filter and no `autoescape off`. | A grep test. |
+| req-stackarmor-vdr-panel-html-13 | The Same From Both Sources | Proposed | The same markup given as the `html` config string and as the `field` of a linked Search's row yields identical output. | The source earns no trust. |
+| req-stackarmor-vdr-panel-html-14 | Failures Of The Search | Proposed | A Search that fails, or a row or field that is missing or not text, renders a visible message and raises nothing; the error text is logged by class only. | As `req-stackarmor-vdr-panel-finding-9`. |
+| req-stackarmor-vdr-panel-html-15 | Needs No Script Or Inline Style | Proposed | The template holds no `script` element and no `style` attribute or element, and the stylesheet is the only style source, so the panel works under a policy that forbids `unsafe-inline`. | |
+| req-stackarmor-vdr-panel-html-16 | Theme Tokens Only | Proposed | The stylesheet holds no hex or rgb literal, scopes every rule under `.tap-panel--sa-html`, and has a print block. | As `req-stackarmor-vdr-panel-prose-7`. |
+| req-stackarmor-vdr-panel-html-17 | The Dependency Is Recorded | Proposed | `nh3` is in `pyproject` with a lower bound of 0.3.7 and no upper pin below the next major, the manifest's FIPS posture stays `compatible` with a note on the dependency, and the Sanitizer Decision above is kept current. | Approved by George, 2026-10-29. |
+| req-stackarmor-vdr-panel-html-18 | No Style Reaches The Cleaner's Allowlist | Proposed | The cleaner is configured with no `style` attribute, no `style` element and no `svg` or `math` element, and a test asserts the configured allowlist equals the one in this spec, so a library default cannot widen it. | The 2026 advisories are all in those features. |
 
 ### v0 Non-Goals
 ----
