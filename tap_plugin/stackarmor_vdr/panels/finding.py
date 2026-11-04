@@ -15,6 +15,8 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 import jsonschema
 
+from .linked import run_linked_search
+
 if TYPE_CHECKING:
     from django.http import HttpRequest
 
@@ -96,27 +98,6 @@ def validate_config(config: Any) -> str | None:
     return None
 
 
-def _run(panel: Panel, request: HttpRequest | None) -> list[dict[str, Any]] | None:
-    """The rows of the linked Search, or None when it could not run; the error text is logged by class only."""
-    from tap_grid.models import Edge, Search
-    from tap_grid.search import execute_search, inputs_from_query
-
-    targets = sorted(
-        str(t) for t in Edge.objects.filter(from_entity=panel.entity, edge_type="USES_SEARCH").values_list("to_entity_id", flat=True)
-    )
-    search = Search.objects.filter(entity_id__in=targets).order_by("entity_id").first() if targets else None
-    if search is None:
-        return None
-    try:
-        inputs = inputs_from_query(search, request.GET) if request is not None else {}
-        result = execute_search(search, inputs or None, layer="extended")
-    except Exception as exc:  # noqa: BLE001
-        logger.error("[5b2e] finding panel search %s failed (%s)", getattr(search, "entity_id", "?"), type(exc).__name__)
-        return None
-    envelope = result["results"] if "results" in result else result
-    return [r for r in (envelope.get("rows") or []) if isinstance(r, dict)]
-
-
 class StackarmorFindingPanelType:
     slug: ClassVar[str] = "stackarmor_finding"
     label: ClassVar[str] = "StackArmor Finding"
@@ -132,4 +113,4 @@ class StackarmorFindingPanelType:
         problem = validate_config(config)
         if problem:
             return {"state": "bad_config", "detail": problem}
-        return finding_context(config["part"], _run(panel, request))
+        return finding_context(config["part"], run_linked_search(panel, request, logger, "5b2e"))

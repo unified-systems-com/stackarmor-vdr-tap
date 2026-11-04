@@ -1,0 +1,18 @@
+<div class="tap-panel tap-panel--sa-html">
+    {% if not panel.config.hide_header %}{% include "tap_web/panel_header.html" %}{% endif %}
+    {% if state == "ok" %}
+    <div class="sa-html">{{ content }}</div>
+    {% elif state == "bad_config" %}
+    <p class="sa-html-empty">Panel config invalid: {{ detail }}</p>
+    {% elif state == "failed" %}
+    <p class="sa-html-empty">The content could not be read.</p>
+    {% elif state == "empty" %}
+    <p class="sa-html-empty">No content.</p>
+    {% elif state == "not_text" %}
+    <p class="sa-html-empty">The field is not text.</p>
+    {% elif state == "refused" %}
+    <p class="sa-html-empty">The content was refused: {{ detail }}.</p>
+    {% else %}
+    <p class="sa-html-empty">The content cannot be shown.</p>
+    {% endif %}
+</div>
