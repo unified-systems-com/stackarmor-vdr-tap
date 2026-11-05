@@ -1,6 +1,6 @@
 manifest_version = "0"
 plugin_version = "0.5.0" # x-release-please-version
-requires_tap = ">=0.3.0"
+requires_tap = ">=0.3.1"
 slug = "stackarmor_vdr"
 name = "StackArmor VDR"
 description = "The stackArmor deterministic, CVSS-environmental PAIN method for FedRAMP VDR: a finding's N-level and deadline from its CVSS impact, its asset's requirements and its exposure."
