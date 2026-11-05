@@ -36,7 +36,7 @@ This plugin was developed with AI coding assistance (Claude Code) under the dire
 From a TAP core checkout:
 
 ```bash
-scripts/spawn-session.sh <label> cli --from 'git+https://github.com/CriticalSecLLC/stackarmor-vdr-tap@<rev>#ci' --dev-plugins stackarmor_vdr
+scripts/spawn-session.sh <label> cli --from 'git+https://github.com/unified-systems-com/stackarmor-vdr-tap@<rev>#ci' --dev-plugins stackarmor_vdr
 ```
 
 The `ci` record ships in the package (`tap_plugin/stackarmor_vdr/boot/ci.boot.json`); until the first release it pins this plugin at the placeholder `v0.0.0`, which the consumer flips to the checkout under test.

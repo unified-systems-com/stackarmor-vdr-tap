@@ -39,4 +39,4 @@ stackarmor-finding = "tap_plugin.stackarmor_vdr.searches.finding.stackarmor_find
 [[boot.records]]
 name = "ci"
 description = "RESERVED NAME (req-boot-bootstrap-ci-record): the stack this plugin's own tests run in — depends_on closure + self, offline, credential-free. The consumer flips self to editable."
-sha256 = "ea5d8c0f9612c66489c46d7eb124f033b31a5ab87c4b6c16dc2d3530b99f63f5"
+sha256 = "b702c96217a0851bd9776c3520a0d3e6eabfee584ed118197a305e82260a5e80"
