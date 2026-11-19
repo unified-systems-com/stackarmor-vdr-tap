@@ -1,5 +1,5 @@
 manifest_version = "0"
-plugin_version = "0.5.0" # x-release-please-version
+plugin_version = "0.5.1" # x-release-please-version
 requires_tap = ">=0.3.1"
 slug = "stackarmor_vdr"
 name = "StackArmor VDR"
@@ -39,4 +39,4 @@ stackarmor-finding = "tap_plugin.stackarmor_vdr.searches.finding.stackarmor_find
 [[boot.records]]
 name = "ci"
 description = "RESERVED NAME (req-boot-bootstrap-ci-record): the stack this plugin's own tests run in — depends_on closure + self, offline, credential-free. The consumer flips self to editable."
-sha256 = "22030fd9e635d689c38e2bc9a7a3acb951f3fd7886300edafa632d7b5f594cec"
+sha256 = "cbf41e9e36747bfb707e6c6f899f177b719dd4608b2e3df9186f57bc06c27111"
