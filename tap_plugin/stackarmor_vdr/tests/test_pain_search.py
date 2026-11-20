@@ -509,7 +509,7 @@ class TestSurface:
         assert (revs["fedramp_20x_vdr"], revs["computing_core"], revs["compliance_core"]) == (
             "v0.1.6",
             "v0.10.8",
-            "v0.8.12",
+            "v0.8.13",
         )
 
 
