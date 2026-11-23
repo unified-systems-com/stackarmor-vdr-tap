@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME
 from tap_grid.models import BaseModel
 
 _LEVEL: dict[str, Any] = {"type": ["string", "null"], "enum": ["low", "medium", "high", None]}
@@ -22,6 +23,8 @@ class AssetProfile(BaseModel):
 
     ENTITY_TYPE: ClassVar[str] = "stackarmor_vdr__asset_profile"
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("source", "stamp_key")
+    # A method stamp on a program (CIA levels, rationale); no source states when it happened or began.
+    EVENT_TIME = NO_EVENT_TIME
     ENTITY_NAME: ClassVar[str] = "StackArmor Asset Profile"
     ENTITY_DESCRIPTION: ClassVar[str] = (
         "The stackArmor method's stamp on a program: an archetype it follows and any explicit confidentiality, "
