@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME
 from tap_grid.models import BaseModel
 
 _LEVEL: dict[str, Any] = {"type": "string", "enum": ["low", "medium", "high"]}
@@ -20,6 +21,8 @@ class Archetype(BaseModel):
 
     ENTITY_TYPE: ClassVar[str] = "stackarmor_vdr__archetype"
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("name",)
+    # A provider-authored catalog entry (name and CIA levels); no source states when it happened or began.
+    EVENT_TIME = NO_EVENT_TIME
     ENTITY_NAME: ClassVar[str] = "StackArmor Archetype"
     ENTITY_DESCRIPTION: ClassVar[str] = (
         "A named set of confidentiality, integrity and availability requirements that a stackArmor asset profile can take."
