@@ -32,8 +32,8 @@ MEMO = {
 WORD = {"L": "low", "M": "medium", "H": "high"}
 
 
-def _node(type_slug: str, payload: dict[str, Any]) -> Entity:
-    made = create_node(type_slug, payload)
+def _node(type_slug: str, payload: dict[str, Any], dimensions: dict[str, str] | None = None) -> Entity:
+    made = create_node(type_slug, payload, dimensions=dimensions)
     assert made.success, made.errors
     return Entity.objects.get(pk=made.entity_id)
 
@@ -128,7 +128,11 @@ class TestStamp:
     def test_a_stamp_points_at_a_program_and_not_at_a_host(self) -> None:
         stamp = _node(PROFILE, _stamp())
         program = _node("computing_core__program", {"program_name": "p"})
-        host = _node("computing_core__host", {"realm": "assert", "stable_id": "h", "kind": "container"})
+        host = _node(
+            "computing_core__host",
+            {"stable_id": "h", "kind": "container"},
+            dimensions={"tap.computing.host_type": "assert"},
+        )
         create_edge(stamp, program, PROFILES)
         with pytest.raises(Exception):  # noqa: B017, PT011 - the grid's refusal type is not public; the stamp declares its targets
             create_edge(stamp, host, PROFILES)
