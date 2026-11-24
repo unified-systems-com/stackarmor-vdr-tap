@@ -37,8 +37,8 @@ HHH = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
 pytestmark = pytest.mark.django_db(transaction=True, databases=["default", "search_readonly"])
 
 
-def _node(type_slug: str, payload: dict[str, Any]) -> Entity:
-    made = create_node(type_slug, payload)
+def _node(type_slug: str, payload: dict[str, Any], dimensions: dict[str, str] | None = None) -> Entity:
+    made = create_node(type_slug, payload, dimensions=dimensions)
     assert made.success, made.errors
     return Entity.objects.get(pk=made.entity_id)
 
@@ -65,10 +65,16 @@ class Estate:
         _edge(self.root, "REQUIRES_PACKAGE", self.dep)
         self.program = _node(C + "program", {"program_name": "app"})
         _edge(self.program, "RUNS_PACKAGE", self.root)
-        self.image = _node(C + "host", {"realm": "assert", "stable_id": "image", "kind": "container"})
+        self.image = _node(
+            C + "host", {"stable_id": "image", "kind": "container"}, dimensions={"tap.computing.host_type": "assert"}
+        )
         for package in (self.root, self.dep):
             _edge(self.image, "INSTALLS_PACKAGE", package)
-        self.container = _node(C + "host", {"realm": "assert", "stable_id": "container", "kind": "container"})
+        self.container = _node(
+            C + "host",
+            {"stable_id": "container", "kind": "container"},
+            dimensions={"tap.computing.host_type": "assert"},
+        )
         _edge(self.container, "RUNS_IMAGE", self.image)
         _edge(self.container, "RUNS_PROGRAM", self.program)
         self.finding = self.finding_on(self.dep, "f1")
