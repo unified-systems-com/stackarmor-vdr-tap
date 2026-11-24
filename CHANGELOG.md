@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.2](https://github.com/unified-systems-com/stackarmor-vdr-tap/compare/v0.5.1...v0.5.2) (2026-11-24)
+
+
+### Features
+
+* declare event time for every model (tap v0.4.7) ([a5afb0c](https://github.com/unified-systems-com/stackarmor-vdr-tap/commit/a5afb0c5eadc51206a8d24a9b4d85ada7f01fc4a))
+* declare event time for every model (tap v0.4.7) ([9e89488](https://github.com/unified-systems-com/stackarmor-vdr-tap/commit/9e89488bd0af16827baa011516b66ff219f921e3))
+
 ## [0.5.1](https://github.com/unified-systems-com/stackarmor-vdr-tap/compare/v0.5.0...v0.5.1) (2026-11-19)
 
 
