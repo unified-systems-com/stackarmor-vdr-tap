@@ -25,7 +25,8 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    # Pinned to a tap main commit (the same one the release-sbom caller uses).
-    uses: unified-systems-com/tap/.github/workflows/plugin-ci.yml@2338a593f89afde5db271d2fad4572539babef1f
+    # Pinned to core tag v0.4.9. The release-sbom and nightly callers stay on v0.4.7 (2338a593); both
+    # of those reusable workflows are unchanged between the two tags.
+    uses: unified-systems-com/tap/.github/workflows/plugin-ci.yml@86f9d918ad5ac2cce52225d3c5a4dd0596aab68e
     with:
       plugin_slug: stackarmor_vdr
