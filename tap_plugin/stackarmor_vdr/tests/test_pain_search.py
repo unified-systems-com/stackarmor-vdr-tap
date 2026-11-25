@@ -513,9 +513,9 @@ class TestSurface:
         ci = json.loads((PACKAGE / "boot" / "ci.boot.json").read_text(encoding="utf-8"))
         revs = {p["slug"]: p["source"]["rev"] for p in ci["install"]["plugins"]}
         assert (revs["fedramp_20x_vdr"], revs["computing_core"], revs["compliance_core"]) == (
-            "v0.1.7",
-            "v0.11.0",
-            "v0.8.14",
+            "v0.1.9",
+            "v0.11.3",
+            "v0.8.16",
         )
 
 
