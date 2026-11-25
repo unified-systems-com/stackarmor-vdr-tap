@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.3](https://github.com/unified-systems-com/stackarmor-vdr-tap/compare/v0.5.2...v0.5.3) (2026-11-25)
+
+
+### Bug Fixes
+
+* ship the history event-time migration on the tap v0.5.0 floor ([91d2581](https://github.com/unified-systems-com/stackarmor-vdr-tap/commit/91d2581745b2e9fdd3399460d07f3ed8c76e76e4))
+* ship the history event-time migration on the tap v0.5.0 floor ([163d4ae](https://github.com/unified-systems-com/stackarmor-vdr-tap/commit/163d4aedf21c807bc7353384097a917840b3c2fb))
+* the floor-pin test names the dependencies' 0.5.0 releases ([3bcda47](https://github.com/unified-systems-com/stackarmor-vdr-tap/commit/3bcda4766c3b083f8938eebd3e7189890fe8e6df))
+
 ## [0.5.2](https://github.com/unified-systems-com/stackarmor-vdr-tap/compare/v0.5.1...v0.5.2) (2026-11-24)
 
 
